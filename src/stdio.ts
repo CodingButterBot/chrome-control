@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { McpServer as BaseMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+// Comment out for now - we'll use @ts-ignore instead
+// declare module '@modelcontextprotocol/sdk/server/mcp.js' {
+//   interface McpServer {
+//     setToolRequestHandlers(): void;
+//   }
+// }
 
 /**
  * Tool class for defining Puppeteer tools
@@ -84,6 +90,15 @@ export class PuppeteerMcpServer extends BaseMcpServer {
     const transport = new StdioServerTransport();
     await this.connect(transport);
     console.error('🚀 Chrome Control MCP Server running on stdio');
+    
+    // Initialize the handlers to enable tools.list and tools.call methods
+    try {
+      // @ts-ignore - Using private method
+      this.setToolRequestHandlers();
+      console.error('✅ Tool handlers initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize tool handlers:', error);
+    }
     
     // Return a close function that uses the transport's close method
     return {
