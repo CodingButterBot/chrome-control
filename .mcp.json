@@ -16,12 +16,6 @@
         "serve"
       ]
     },
-    "puppeteer": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["mcp-chrome-control"],
-      "env": {}
-    },
     "smtp_gmail": {
       "type": "stdio",
       "command": "npx",
@@ -40,6 +34,12 @@
     "github": {
       "type": "stdio",
       "command": "gh-cli-mcp"
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["mcp-chrome-control"],
+      "env": {}
     }
   }
 }
