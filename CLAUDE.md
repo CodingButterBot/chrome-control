@@ -1,45 +1,128 @@
-# CLAUDE.md
+# Chrome Control - Development Guidelines
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) and other developers when working with this repository.
 
-## Build and Test Commands
-- Build: `npm run build` (TypeScript compilation)
-- Lint: `npm run lint`
-- Start: `npm run start` 
-- Development mode: `npm run dev`
-- Run tests: `npm test` or specific tests:
-  - Browser test: `npm run test:browser`
-  - MCP test: `npm run test:mcp`
-  - Enhanced MCP test: `npm run test:enhanced`
+## 📂 Project Structure
 
-## Code Style Guidelines
-- **TypeScript**: Strict type checking enabled; use proper types and interfaces
-- **Imports**: ES modules format with `.js` extension in import paths
-- **Classes**: Constructor parameters at the top, public methods first, then private
-- **Error Handling**: Use try/catch blocks with detailed error messages
-- **Naming**: Use camelCase for variables/methods, PascalCase for classes/types
-- **Documentation**: JSDoc-style comments for public methods and classes
-- **MCP Compatibility**: Use correct MCP method names (e.g., `tools.call` not `execute`)
-- **Browser Management**: Always ensure browser instances are properly closed
+```
+chrome-control/
+├── bin/                   # Compiled JavaScript output (not in repo)
+├── src/                   # TypeScript source files
+│   ├── browser-manager.ts # Browser instance management
+│   ├── index.ts           # Main entry point
+│   ├── puppeteer.ts       # Core puppeteer functions 
+│   ├── register.ts        # Schema definitions
+│   ├── stdio.ts           # IO handling
+│   ├── tools.ts           # Tool definitions
+│   └── types/             # TypeScript interfaces
+├── docs/                  # Documentation files
+├── tests/                 # Test files
+│   ├── examples/          # Example usage scripts
+│   └── ...                # Unit and integration tests
+├── CLAUDE.md              # This file - instructions for Claude AI
+├── README.md              # Project documentation
+├── package.json           # Dependencies and scripts
+└── tsconfig.json          # TypeScript configuration
+```
 
-## Testing
-Run enhanced tests when modifying MCP integration. Verify tool methods work correctly by testing with the actual MCP protocol format.
+## 🛠️ Build and Test Commands
 
-## Work Continuity
-When starting a new session, review the Git history, test results, and this document to understand previous work. Key recent changes include:
+- **Build**: `npm run build` - TypeScript compilation
+- **Lint**: `npm run lint` - Run ESLint
+- **Start**: `npm run start` - Start the MCP server
+- **Dev Mode**: `npm run dev` - Start with auto-reload
+- **Tests**: 
+  - `npm run test:all` - Run all tests
+  - `npm run test:browser` - Test browser launching
+  - `npm run test:mcp` - Test MCP server functionality
+  - `npm run test:enhanced` - Test enhanced MCP interactions
+  - `npm run test:navigation` - Test enhanced navigation
+- **Examples**:
+  - `npm run example:puppies` - Run DuckDuckGo search example
 
-1. Fixed MCP integration by:
-   - Updating `.mcp.json` to use npx for tool execution
-   - Modifying `stdio.ts` to explicitly initialize tool request handlers
-   - Correcting request method names from `execute` to `tools.call` in test scripts
-   - Creating `test-mcp-enhanced.js` for better debugging of MCP interactions
+## 📝 Code Style Guidelines
 
-2. Known issues to address:
-   - Error response "Method not found" still occurs in some tests
-   - May need to update MCP SDK dependencies
-   - Additional verification needed for navigation, screenshots, and other puppeteer actions
+### TypeScript
+- Use strict type checking with proper interfaces and types
+- Avoid `any` types when possible
+- Use interfaces for object parameters
 
-3. Next steps:
-   - Further improve MCP protocol compatibility
-   - Add comprehensive tests for all puppeteer tools
-   - Fix remaining method-not-found errors
+### Formatting
+- Use ES modules format with `.js` extension in import paths
+- Indent with 2 spaces
+- Use semicolons at end of statements
+
+### Code Organization
+- Constructor parameters at the top of classes
+- Public methods first, then private
+- Use clear, descriptive names for variables and functions
+
+### Naming Conventions
+- `camelCase` for variables and methods
+- `PascalCase` for classes, interfaces, and types
+- `UPPER_SNAKE_CASE` for constants
+
+### Error Handling
+- Use try/catch blocks with specific error messages
+- Log errors appropriately with console.error
+- Return structured error responses in tools
+
+### Documentation
+- Add JSDoc-style comments for public methods and classes
+- Document parameters and return types
+- Include examples for complex functions
+
+## 🔄 MCP Protocol Guidelines
+
+- Use correct MCP method names (e.g., `tools.call` not `execute`)
+- Format JSON-RPC 2.0 requests correctly
+- Return content as structured arrays of typed objects
+- Ensure browser instances are properly closed after use
+- Test all tools with actual MCP protocol format
+
+## 🧪 Testing Requirements
+
+- Add tests for all new functionality
+- Run enhanced tests when modifying MCP integration
+- Test with headless and visible browser options
+- Verify proper error handling for all tools
+- Test on different operating systems when possible
+
+## 🔄 Recent Changes and Work Continuity
+
+### Latest Improvements
+1. **Enhanced Navigation Feature** (PR #9)
+   - Added customizable response formats for navigation
+   - Implemented specialized response options (text, links, input fields)
+   - Created comprehensive documentation and examples
+
+2. **MCP Integration**
+   - Updated `.mcp.json` to use npx for tool execution
+   - Modified `stdio.ts` to explicitly initialize tool request handlers
+   - Corrected request method names from `execute` to `tools.call`
+   - Created enhanced tests for MCP interactions debugging
+
+3. **Repository Organization**
+   - Moved test files to dedicated test directory
+   - Created separate examples directory
+   - Improved documentation and README
+   - Added comprehensive gitignore rules
+
+### Known Issues
+- Error response "Method not found" sometimes occurs in tests
+- MCP SDK dependencies may need updates
+- Additional verification needed for navigation, screenshots, and other puppeteer actions
+
+### Current Development Priorities
+1. Implement DOM query filtering for reduced token usage
+2. Create action chaining for multiple actions in a single call
+3. Add element selection by attribute values (placeholder, class, id)
+4. Implement response filtering to reduce token usage
+5. Create comprehensive testing suite for LLM-style interactions
+
+## 🚀 Performance Considerations
+
+- Minimize token usage in responses for LLM integration
+- Use browser-manager to efficiently manage browser instances
+- Implement lazy loading where appropriate
+- Consider response size in screenshot and DOM operations

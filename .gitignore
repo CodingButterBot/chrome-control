@@ -20,6 +20,11 @@ pids
 *.seed
 *.pid.lock
 
+# Testing output
+*.png
+coverage/
+.nyc_output/
+
 # dotenv environment variable files
 .env
 .env.local
@@ -29,10 +34,10 @@ pids
 
 # IDE files
 .vscode/*
-\!.vscode/settings.json
-\!.vscode/tasks.json
-\!.vscode/launch.json
-\!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
@@ -40,6 +45,7 @@ pids
 # OS files
 .DS_Store
 Thumbs.db
-EOL < /dev/null
 
+# MCP specific
 **/.claude/settings.local.json
+.mcp.json

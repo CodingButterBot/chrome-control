@@ -5,23 +5,40 @@
   <p><em>Control Chrome browser directly from Claude and other AI assistants</em></p>
 </div>
 
-This Model Context Protocol (MCP) server wraps Puppeteer for Chrome browser control, enabling AI assistants to automate web browsing through standardized tools.
+This Model Context Protocol (MCP) server wraps Puppeteer for Chrome browser control, enabling AI assistants to automate web browsing through standardized tools. Designed specifically for LLM-based assistants like Claude, it provides efficient browser control with minimal token usage.
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Available Tools](#-available-tools)
+- [LLM Integration](#-llm-integration)
+- [Enhanced Navigation](#-enhanced-navigation)
+- [Project Structure](#-project-structure)
+- [Development](#-development)
+- [Troubleshooting](#-troubleshooting)
+- [License](#-license)
 
 ## ✨ Features
 
 - **Full Browser Control** - Navigate, click, fill forms, and more from any MCP-compatible AI assistant
+- **Enhanced Navigation** - Request specific data and elements during navigation to reduce token usage
 - **Screenshot Capture** - Take screenshots of entire pages or specific elements
 - **Form Interaction** - Fill forms, select options, and submit data
+- **DOM Query Filtering** - Extract only the elements and attributes you need
 - **JavaScript Execution** - Run custom JavaScript in the browser
+- **Anti-Bot Protection** - Browser fingerprinting protection measures
+- **Element Selection** - Select elements by various attributes like placeholder, class, and id
 - **Easy Setup** - Works with npx or global installation
-- **Secure Design** - Configurable safety limits on browser automation
 
-## 📋 Prerequisites
+## 🚀 Installation
+
+### Prerequisites
 
 - [**Node.js**](https://nodejs.org/) v18 or later
 - Chrome browser (automatically installed by Puppeteer if needed)
-
-## 🚀 Installation
 
 ### Option 1: Run with npx (No Installation Required)
 
@@ -80,85 +97,128 @@ In your MCP configuration:
 }
 ```
 
-## 🛠️ Available Tools
+## 📖 Usage
 
-### Navigation
-
-| Tool | Description | Example Usage |
-|------|-------------|--------------|
-| `puppeteer_navigate` | Navigate to a URL | "Navigate to https://example.com" |
-
-### Interaction
-
-| Tool | Description | Example Usage |
-|------|-------------|--------------|
-| `puppeteer_click` | Click an element | "Click the login button" |
-| `puppeteer_fill` | Fill form fields | "Fill the username field with 'user123'" |
-| `puppeteer_select` | Select option from dropdown | "Select 'Option 2' from the dropdown" |
-| `puppeteer_hover` | Hover over an element | "Hover over the menu icon" |
-
-### Capture
-
-| Tool | Description | Example Usage |
-|------|-------------|--------------|
-| `puppeteer_screenshot` | Take a screenshot | "Take a screenshot of the current page" |
-
-### Scripting
-
-| Tool | Description | Example Usage |
-|------|-------------|--------------|
-| `puppeteer_evaluate` | Execute JavaScript | "Run JavaScript to extract all links on the page" |
-
-## 🧩 Using with Claude or Other AI Assistants
-
-When properly configured, you can use commands like:
+Chrome Control MCP Server can be used with any MCP-compatible AI assistant. When properly configured, you can use natural language commands like:
 
 ```
-Can you navigate to example.com for me?
+Can you navigate to duckduckgo.com for me?
 Take a screenshot of the pricing table on this page
 Fill in the registration form with my details
 ```
 
 The AI will use the appropriate Chrome Control MCP tools to complete these tasks.
 
-## 🔍 Troubleshooting
+## 🛠️ Available Tools
 
-### Linux Installation
+### Browser Management
 
-When running on Linux, you may need to:
+| Tool | Description |
+|------|-------------|
+| `puppeteer_create_browser` | Create a new browser instance |
+| `puppeteer_list_browsers` | List all browser instances |
+| `puppeteer_close_browser` | Close a browser instance |
 
-1. Install Chrome browser dependencies:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y libatk-bridge2.0-0 libgtk-3-0 libgbm1 libnss3 libxss1 libasound2
-   ```
+### Tab Management
 
-2. Set the Chrome executable path:
-   ```bash
-   # Find your Chrome installation
-   which google-chrome
-   
-   # Run with the proper path
-   CHROME_PATH=/usr/bin/google-chrome npx mcp-chrome-control
-   ```
+| Tool | Description |
+|------|-------------|
+| `puppeteer_create_tab` | Create a new browser tab |
+| `puppeteer_list_tabs` | List all tabs in a browser |
+| `puppeteer_close_tab` | Close a browser tab |
 
-3. If you're still having issues, try running with these options in your `.mcp.json`:
-   ```json
-   {
-     "puppeteer": {
-       "type": "stdio",
-       "command": "CHROME_PATH=/usr/bin/google-chrome",
-       "args": ["npx", "mcp-chrome-control"],
-       "env": {}
-     }
-   }
-   ```
+### Navigation
 
-### Common Issues
+| Tool | Description |
+|------|-------------|
+| `puppeteer_navigate` | Navigate to a URL with customizable response options |
+| `puppeteer_wait` | Wait for elements, navigation, or time periods |
 
-- **Browser launch errors**: Make sure you have sufficient permissions and your system meets Puppeteer requirements
-- **Element not found**: Check if selectors are correct or try using different selector strategies
-- **Timeouts**: Increase timeouts for slow websites or operations
+### Interaction
+
+| Tool | Description |
+|------|-------------|
+| `puppeteer_click` | Click an element |
+| `puppeteer_fill` | Fill form fields |
+| `puppeteer_select` | Select option from dropdown |
+| `puppeteer_hover` | Hover over an element |
+| `puppeteer_mouse` | Control mouse position and actions |
+| `puppeteer_keyboard` | Control keyboard actions |
+
+### Capture
+
+| Tool | Description |
+|------|-------------|
+| `puppeteer_screenshot` | Take a screenshot of the page or an element |
+
+### Data Management
+
+| Tool | Description |
+|------|-------------|
+| `puppeteer_cookies` | Manage browser cookies |
+| `puppeteer_evaluate` | Execute JavaScript in the browser |
+
+## 🤖 LLM Integration
+
+Chrome Control is specifically designed for optimal use with LLMs (Large Language Models). Key features for LLM integration include:
+
+- **Token Efficiency**: Only receive the specific data needed
+- **Context-Aware Navigation**: Customize response formats to reduce context length
+- **Element Filtering**: Target specific elements rather than processing entire pages
+- **Action Chaining**: Perform complex tasks with minimal back-and-forth communication
+- **Intuitive Integration**: Natural language interface for browser control
+
+## 🌐 Enhanced Navigation
+
+The enhanced navigation feature allows specifying exactly what data to receive when navigating to a URL:
+
+```javascript
+// Example request with enhanced navigation
+{
+  "name": "puppeteer_navigate",
+  "arguments": {
+    "url": "https://example.com",
+    "responseFormat": {
+      "screenshot": true,
+      "fullPage": false,
+      "pageText": false, 
+      "pageTitle": true,
+      "elements": {
+        "selector": "input[type='text']",
+        "attributes": ["placeholder", "name", "id"],
+        "includeText": true
+      },
+      "links": true,
+      "inputs": true
+    }
+  }
+}
+```
+
+For detailed information, see [Enhanced Navigation Documentation](docs/anti-bot-research.md).
+
+## 📂 Project Structure
+
+```
+chrome-control/
+├── bin/                   # Compiled JavaScript output
+├── src/                   # TypeScript source files
+│   ├── browser-manager.ts # Browser instance management
+│   ├── index.ts           # Main entry point
+│   ├── puppeteer.ts       # Core puppeteer functions
+│   ├── register.ts        # Schema definitions
+│   ├── stdio.ts           # IO handling
+│   ├── tools.ts           # Tool definitions
+│   └── types/             # TypeScript interfaces
+├── docs/                  # Documentation
+├── tests/                 # Test files
+│   ├── examples/          # Example usage scripts
+│   └── ...                # Unit and integration tests
+├── CLAUDE.md              # Instructions for Claude AI
+├── README.md              # Project documentation
+├── package.json           # Dependencies and scripts
+└── tsconfig.json          # TypeScript configuration
+```
 
 ## 👨‍💻 Development
 
@@ -178,32 +238,50 @@ npm run dev
 
 ### Testing
 
-You can run tests to verify that the browser and MCP server are working correctly:
-
 ```bash
-# Test browser launching and navigation (opens Chrome window)
-CHROME_PATH=/usr/bin/google-chrome npm run test:browser
+# Run all tests
+npm run test:all
 
-# Test the MCP server functionality
-CHROME_PATH=/usr/bin/google-chrome npm run test:mcp
+# Run individual test suites
+npm run test:browser       # Test browser launching
+npm run test:mcp           # Test MCP server functionality
+npm run test:enhanced      # Test enhanced MCP interactions
+npm run test:navigation    # Test enhanced navigation
 
-# Run the default test (browser test)
-CHROME_PATH=/usr/bin/google-chrome npm test
+# Run examples
+npm run example:puppies    # DuckDuckGo search example
 ```
 
 ### Adding New Browser Control Features
 
-1. Define parameter schema in `register.ts`
-2. Implement functionality in `puppeteer.ts`
-3. Add the tool to `tools.ts`
+1. Define parameter interface in `src/types/puppeteer.ts`
+2. Define parameter schema in `src/register.ts`
+3. Implement functionality in `src/puppeteer.ts`
+4. Add the tool to `src/tools.ts`
+5. Add tests to the `tests/` directory
 
-### Publishing Updates
+## 🔍 Troubleshooting
+
+### Linux Installation
+
+When running on Linux, you may need to install Chrome browser dependencies:
 
 ```bash
-# Update version in package.json
-npm run build
-npm publish
+sudo apt-get update
+sudo apt-get install -y libatk-bridge2.0-0 libgtk-3-0 libgbm1 libnss3 libxss1 libasound2
 ```
+
+Set the Chrome executable path:
+```bash
+CHROME_PATH=/usr/bin/google-chrome npx mcp-chrome-control
+```
+
+### Common Issues
+
+- **Browser launch errors**: Ensure you have sufficient permissions and meet Puppeteer requirements
+- **Element not found**: Check if selectors are correct or try using different selector strategies
+- **Timeouts**: Increase timeouts for slow websites or operations
+- **MCP connectivity**: Verify MCP configuration in your client application
 
 ## 📄 License
 
