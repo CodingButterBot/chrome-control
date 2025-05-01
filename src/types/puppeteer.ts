@@ -49,6 +49,22 @@ export interface TabParams extends BasePuppeteerParams {
 }
 
 /**
+ * DOM Filter Options
+ */
+export interface DOMFilterOptions {
+  includeElements?: string[];  // Element types to include (e.g., 'div', 'a', 'input')
+  excludeElements?: string[];  // Element types to exclude
+  maxElements?: number;        // Maximum number of elements to return
+  maxTextLength?: number;      // Maximum text length for each element
+  textFilter?: string;         // Only include elements containing this text
+  attributeFilter?: {          // Filter elements by attribute values
+    name: string;              // Attribute name (e.g., 'class', 'id', 'aria-label')
+    value: string;             // Attribute value to match
+    partial?: boolean;         // Whether to do partial matching
+  }[];
+}
+
+/**
  * Response format options
  */
 export interface ResponseFormatOptions {
@@ -61,9 +77,11 @@ export interface ResponseFormatOptions {
     attributes?: string[];
     includeText?: boolean;
     includeHTML?: boolean;
+    filter?: DOMFilterOptions;  // Added filtering options
   };
   links?: boolean;
   inputs?: boolean;
+  filter?: DOMFilterOptions;    // Global filter options for all content
 }
 
 /**

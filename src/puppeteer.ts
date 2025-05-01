@@ -244,7 +244,53 @@ export async function navigate(params: NavigateParams): Promise<{
         console.error(`Extracting elements matching selector: ${format.elements.selector}`);
         const elementsData = await page.evaluate((selector, options) => {
           const elements = Array.from(document.querySelectorAll(selector));
-          return elements.map(el => {
+          let filteredElements = elements;
+          
+          // Apply filtering if specified
+          if (options.filter) {
+            const filter = options.filter;
+            
+            // Filter by element type
+            if (filter.includeElements && filter.includeElements.length > 0) {
+              filteredElements = filteredElements.filter(el => 
+                filter.includeElements.includes(el.tagName.toLowerCase())
+              );
+            }
+            
+            if (filter.excludeElements && filter.excludeElements.length > 0) {
+              filteredElements = filteredElements.filter(el => 
+                !filter.excludeElements.includes(el.tagName.toLowerCase())
+              );
+            }
+            
+            // Filter by text content
+            if (filter.textFilter) {
+              filteredElements = filteredElements.filter(el => 
+                (el as HTMLElement).innerText.includes(filter.textFilter)
+              );
+            }
+            
+            // Filter by attribute values
+            if (filter.attributeFilter && filter.attributeFilter.length > 0) {
+              filteredElements = filteredElements.filter(el => {
+                return filter.attributeFilter.some(attrFilter => {
+                  const attrValue = (el as HTMLElement).getAttribute(attrFilter.name);
+                  if (!attrValue) return false;
+                  
+                  return attrFilter.partial 
+                    ? attrValue.includes(attrFilter.value)
+                    : attrValue === attrFilter.value;
+                });
+              });
+            }
+            
+            // Limit number of elements if specified
+            if (filter.maxElements && filteredElements.length > filter.maxElements) {
+              filteredElements = filteredElements.slice(0, filter.maxElements);
+            }
+          }
+          
+          return filteredElements.map(el => {
             const data: any = {};
             
             // Include attributes if requested
@@ -255,9 +301,19 @@ export async function navigate(params: NavigateParams): Promise<{
               });
             }
             
+            // Include tag name
+            data.tagName = el.tagName.toLowerCase();
+            
             // Include text content if requested
             if (options.includeText) {
-              data.text = (el as HTMLElement).innerText;
+              let text = (el as HTMLElement).innerText;
+              
+              // Limit text length if specified in filter
+              if (options.filter && options.filter.maxTextLength && text.length > options.filter.maxTextLength) {
+                text = text.substring(0, options.filter.maxTextLength) + '...';
+              }
+              
+              data.text = text;
             }
             
             // Include HTML if requested
@@ -270,7 +326,8 @@ export async function navigate(params: NavigateParams): Promise<{
         }, format.elements.selector, {
           attributes: format.elements.attributes || [],
           includeText: format.elements.includeText || false,
-          includeHTML: format.elements.includeHTML || false
+          includeHTML: format.elements.includeHTML || false,
+          filter: format.elements.filter || {}
         });
         
         content.push({ type: 'text', text: `Elements found: ${elementsData.length}` });
@@ -280,13 +337,65 @@ export async function navigate(params: NavigateParams): Promise<{
       // Include links if requested
       if (format.links) {
         console.error('Extracting links from page');
-        const links = await page.evaluate(() => {
-          return Array.from(document.querySelectorAll('a')).map(a => ({
+        const links = await page.evaluate((filter) => {
+          let allLinks = Array.from(document.querySelectorAll('a')).map(a => ({
             href: a.href,
             text: a.innerText,
-            title: a.getAttribute('title')
+            title: a.getAttribute('title'),
+            tagName: 'a'
           }));
-        });
+          
+          // Apply filtering if specified
+          if (filter) {
+            // Filter by text content
+            if (filter.textFilter) {
+              allLinks = allLinks.filter(link => 
+                link.text.includes(filter.textFilter)
+              );
+            }
+            
+            // Filter by attribute values (href is treated as a special case for links)
+            if (filter.attributeFilter && filter.attributeFilter.length > 0) {
+              allLinks = allLinks.filter(link => {
+                return filter.attributeFilter.some(attrFilter => {
+                  if (attrFilter.name === 'href') {
+                    return attrFilter.partial 
+                      ? link.href.includes(attrFilter.value)
+                      : link.href === attrFilter.value;
+                  }
+                  
+                  if (attrFilter.name === 'title' && link.title) {
+                    return attrFilter.partial 
+                      ? link.title.includes(attrFilter.value)
+                      : link.title === attrFilter.value;
+                  }
+                  
+                  return false;
+                });
+              });
+            }
+            
+            // Limit text length if specified
+            if (filter.maxTextLength) {
+              allLinks = allLinks.map(link => {
+                if (link.text.length > filter.maxTextLength) {
+                  return {
+                    ...link,
+                    text: link.text.substring(0, filter.maxTextLength) + '...'
+                  };
+                }
+                return link;
+              });
+            }
+            
+            // Limit number of links if specified
+            if (filter.maxElements && allLinks.length > filter.maxElements) {
+              allLinks = allLinks.slice(0, filter.maxElements);
+            }
+          }
+          
+          return allLinks;
+        }, format.filter || null);
         
         content.push({ type: 'text', text: `Links found: ${links.length}` });
         content.push({ type: 'text', text: JSON.stringify(links, null, 2) });
@@ -295,8 +404,8 @@ export async function navigate(params: NavigateParams): Promise<{
       // Include inputs if requested
       if (format.inputs) {
         console.error('Extracting input fields from page');
-        const inputs = await page.evaluate(() => {
-          return Array.from(document.querySelectorAll('input, textarea, select')).map(input => {
+        const inputs = await page.evaluate((filter) => {
+          let allInputs = Array.from(document.querySelectorAll('input, textarea, select')).map(input => {
             const element = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
             return {
               type: element.tagName.toLowerCase(),
@@ -309,7 +418,64 @@ export async function navigate(params: NavigateParams): Promise<{
               isDisabled: element.hasAttribute('disabled')
             };
           });
-        });
+          
+          // Apply filtering if specified
+          if (filter) {
+            // Filter by element type (input, textarea, select)
+            if (filter.includeElements && filter.includeElements.length > 0) {
+              allInputs = allInputs.filter(input => 
+                filter.includeElements.includes(input.type)
+              );
+            }
+            
+            if (filter.excludeElements && filter.excludeElements.length > 0) {
+              allInputs = allInputs.filter(input => 
+                !filter.excludeElements.includes(input.type)
+              );
+            }
+            
+            // Filter by attribute values
+            if (filter.attributeFilter && filter.attributeFilter.length > 0) {
+              allInputs = allInputs.filter(input => {
+                return filter.attributeFilter.some(attrFilter => {
+                  // Special cases for common input attributes
+                  if (attrFilter.name === 'id' && input.id) {
+                    return attrFilter.partial 
+                      ? input.id.includes(attrFilter.value)
+                      : input.id === attrFilter.value;
+                  }
+                  
+                  if (attrFilter.name === 'name' && input.name) {
+                    return attrFilter.partial 
+                      ? input.name.includes(attrFilter.value)
+                      : input.name === attrFilter.value;
+                  }
+                  
+                  if (attrFilter.name === 'placeholder' && input.placeholder) {
+                    return attrFilter.partial 
+                      ? input.placeholder.includes(attrFilter.value)
+                      : input.placeholder === attrFilter.value;
+                  }
+                  
+                  if (attrFilter.name === 'type' && input.inputType) {
+                    return attrFilter.partial 
+                      ? input.inputType.includes(attrFilter.value)
+                      : input.inputType === attrFilter.value;
+                  }
+                  
+                  return false;
+                });
+              });
+            }
+            
+            // Limit number of inputs if specified
+            if (filter.maxElements && allInputs.length > filter.maxElements) {
+              allInputs = allInputs.slice(0, filter.maxElements);
+            }
+          }
+          
+          return allInputs;
+        }, format.filter || null);
         
         content.push({ type: 'text', text: `Input fields found: ${inputs.length}` });
         content.push({ type: 'text', text: JSON.stringify(inputs, null, 2) });

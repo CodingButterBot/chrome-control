@@ -10,11 +10,11 @@ When working with LLMs, we need to reduce the amount of token usage when returni
 - Provide options to limit response size
 
 ## Acceptance Criteria
-- [ ] Add a `filter` parameter to relevant methods that allows for more granular control of returned data
-- [ ] Support basic filtering operations (include/exclude elements by type, attribute, etc.)
-- [ ] Include examples of using filters in documentation
-- [ ] Add tests for filtering functionality
-- [ ] Ensure backward compatibility with existing API
+- [x] Add a `filter` parameter to relevant methods that allows for more granular control of returned data
+- [x] Support basic filtering operations (include/exclude elements by type, attribute, etc.)
+- [x] Include examples of using filters in documentation
+- [x] Add tests for filtering functionality
+- [x] Ensure backward compatibility with existing API
 
 ## Additional Notes
 This feature is critical for reducing token usage when working with LLMs and will improve the efficiency of the API.
