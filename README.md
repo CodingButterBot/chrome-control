@@ -5,7 +5,7 @@
   <p><em>Control Chrome browser directly from Claude and other AI assistants</em></p>
 </div>
 
-This Model Context Protocol (MCP) server wraps Puppeteer for Chrome browser control, enabling AI assistants to automate web browsing through standardized tools. Designed specifically for LLM-based assistants like Claude, it provides efficient browser control with minimal token usage.
+This Model Context Protocol (MCP) server provides Chrome browser control, enabling AI assistants to automate web browsing through standardized tools. Designed specifically for LLM-based assistants like Claude, it provides efficient browser control with minimal token usage. Powered by Puppeteer under the hood.
 
 ## 📋 Table of Contents
 
@@ -72,7 +72,7 @@ Add the following to your `.mcp.json` file:
 
 ```json
 {
-  "puppeteer": {
+  "chrome": {
     "type": "stdio",
     "command": "npx",
     "args": ["mcp-chrome-control"],
@@ -88,7 +88,7 @@ In your MCP configuration:
 ```json
 {
   "mcpServers": {
-    "puppeteer": {
+    "chrome": {
       "command": "npx",
       "args": ["mcp-chrome-control"],
       "env": {}
@@ -115,48 +115,48 @@ The AI will use the appropriate Chrome Control MCP tools to complete these tasks
 
 | Tool | Description |
 |------|-------------|
-| `puppeteer_create_browser` | Create a new browser instance |
-| `puppeteer_list_browsers` | List all browser instances |
-| `puppeteer_close_browser` | Close a browser instance |
+| `chrome_create_browser` | Create a new browser instance |
+| `chrome_list_browsers` | List all browser instances |
+| `chrome_close_browser` | Close a browser instance |
 
 ### Tab Management
 
 | Tool | Description |
 |------|-------------|
-| `puppeteer_create_tab` | Create a new browser tab |
-| `puppeteer_list_tabs` | List all tabs in a browser |
-| `puppeteer_close_tab` | Close a browser tab |
+| `chrome_create_tab` | Create a new browser tab |
+| `chrome_list_tabs` | List all tabs in a browser |
+| `chrome_close_tab` | Close a browser tab |
 
 ### Navigation
 
 | Tool | Description |
 |------|-------------|
-| `puppeteer_navigate` | Navigate to a URL with customizable response options |
-| `puppeteer_wait` | Wait for elements, navigation, or time periods |
+| `chrome_navigate` | Navigate to a URL with customizable response options |
+| `chrome_wait` | Wait for elements, navigation, or time periods |
 
 ### Interaction
 
 | Tool | Description |
 |------|-------------|
-| `puppeteer_click` | Click an element |
-| `puppeteer_fill` | Fill form fields |
-| `puppeteer_select` | Select option from dropdown |
-| `puppeteer_hover` | Hover over an element |
-| `puppeteer_mouse` | Control mouse position and actions |
-| `puppeteer_keyboard` | Control keyboard actions |
+| `chrome_click` | Click an element |
+| `chrome_fill` | Fill form fields |
+| `chrome_select` | Select option from dropdown |
+| `chrome_hover` | Hover over an element |
+| `chrome_mouse` | Control mouse position and actions |
+| `chrome_keyboard` | Control keyboard actions |
 
 ### Capture
 
 | Tool | Description |
 |------|-------------|
-| `puppeteer_screenshot` | Take a screenshot of the page or an element |
+| `chrome_screenshot` | Take a screenshot of the page or an element |
 
 ### Data Management
 
 | Tool | Description |
 |------|-------------|
-| `puppeteer_cookies` | Manage browser cookies |
-| `puppeteer_evaluate` | Execute JavaScript in the browser |
+| `chrome_cookies` | Manage browser cookies |
+| `chrome_evaluate` | Execute JavaScript in the browser |
 
 ## 🤖 LLM Integration
 
@@ -175,7 +175,7 @@ The enhanced navigation feature allows specifying exactly what data to receive w
 ```javascript
 // Example request with enhanced navigation
 {
-  "name": "puppeteer_navigate",
+  "name": "chrome_navigate",
   "arguments": {
     "url": "https://example.com",
     "responseFormat": {
@@ -205,7 +205,7 @@ chrome-control/
 ├── src/                   # TypeScript source files
 │   ├── browser-manager.ts # Browser instance management
 │   ├── index.ts           # Main entry point
-│   ├── puppeteer.ts       # Core puppeteer functions
+│   ├── puppeteer.ts       # Core Chrome control functions (Puppeteer implementation)
 │   ├── register.ts        # Schema definitions
 │   ├── stdio.ts           # IO handling
 │   ├── tools.ts           # Tool definitions

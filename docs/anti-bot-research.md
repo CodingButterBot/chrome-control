@@ -16,7 +16,7 @@ The enhanced navigation feature allows LLMs to specify exactly what data they wa
 
 ## Using Enhanced Navigation
 
-When calling the `puppeteer_navigate` tool, you can now include a `responseFormat` parameter to customize what data is returned:
+When calling the `chrome_navigate` tool, you can now include a `responseFormat` parameter to customize what data is returned:
 
 ```json
 {
@@ -24,7 +24,7 @@ When calling the `puppeteer_navigate` tool, you can now include a `responseForma
   "id": "1",
   "method": "tools.call",
   "params": {
-    "name": "puppeteer_navigate",
+    "name": "chrome_navigate",
     "arguments": {
       "url": "https://example.com",
       "browserId": "browser-uuid-here",

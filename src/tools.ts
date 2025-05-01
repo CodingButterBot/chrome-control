@@ -41,7 +41,7 @@ import {
  */
 export const browserManagementTools = {
   createBrowser: new Tool(
-    'puppeteer_create_browser',
+    'chrome_create_browser',
     browserParamsSchema,
     async (params) => {
       return await createBrowser(params);
@@ -50,7 +50,7 @@ export const browserManagementTools = {
   ),
   
   listBrowsers: new Tool(
-    'puppeteer_list_browsers',
+    'chrome_list_browsers',
     browserParamsSchema.omit({}).optional(),
     async () => {
       return await listBrowsers();
@@ -59,7 +59,7 @@ export const browserManagementTools = {
   ),
   
   closeBrowser: new Tool(
-    'puppeteer_close_browser',
+    'chrome_close_browser',
     browserParamsSchema,
     async (params) => {
       return await closeBrowser(params);
@@ -73,7 +73,7 @@ export const browserManagementTools = {
  */
 export const tabManagementTools = {
   createTab: new Tool(
-    'puppeteer_create_tab',
+    'chrome_create_tab',
     tabParamsSchema,
     async (params) => {
       return await createTab(params);
@@ -82,7 +82,7 @@ export const tabManagementTools = {
   ),
   
   listTabs: new Tool(
-    'puppeteer_list_tabs',
+    'chrome_list_tabs',
     browserParamsSchema,
     async (params) => {
       return await listTabs(params);
@@ -91,7 +91,7 @@ export const tabManagementTools = {
   ),
   
   closeTab: new Tool(
-    'puppeteer_close_tab',
+    'chrome_close_tab',
     tabParamsSchema,
     async (params) => {
       return await closeTab(params);
@@ -105,7 +105,7 @@ export const tabManagementTools = {
  */
 export const navigationTools = {
   navigate: new Tool(
-    'puppeteer_navigate',
+    'chrome_navigate',
     navigateParamsSchema,
     async (params) => {
       return await navigate(params);
@@ -114,7 +114,7 @@ export const navigationTools = {
   ),
   
   wait: new Tool(
-    'puppeteer_wait',
+    'chrome_wait',
     waitParamsSchema,
     async (params) => {
       return await wait(params);
@@ -128,7 +128,7 @@ export const navigationTools = {
  */
 export const screenshotTools = {
   screenshot: new Tool(
-    'puppeteer_screenshot',
+    'chrome_screenshot',
     screenshotParamsSchema,
     async (params) => {
       return await screenshot(params);
@@ -142,7 +142,7 @@ export const screenshotTools = {
  */
 export const mouseTools = {
   click: new Tool(
-    'puppeteer_click',
+    'chrome_click',
     clickParamsSchema,
     async (params) => {
       return await click(params);
@@ -151,7 +151,7 @@ export const mouseTools = {
   ),
   
   hover: new Tool(
-    'puppeteer_hover',
+    'chrome_hover',
     hoverParamsSchema,
     async (params) => {
       return await hover(params);
@@ -160,7 +160,7 @@ export const mouseTools = {
   ),
   
   mouse: new Tool(
-    'puppeteer_mouse',
+    'chrome_mouse',
     mouseParamsSchema,
     async (params) => {
       return await mouse(params);
@@ -174,7 +174,7 @@ export const mouseTools = {
  */
 export const keyboardTools = {
   keyboard: new Tool(
-    'puppeteer_keyboard',
+    'chrome_keyboard',
     keyboardParamsSchema,
     async (params) => {
       return await keyboard(params);
@@ -188,7 +188,7 @@ export const keyboardTools = {
  */
 export const formTools = {
   fill: new Tool(
-    'puppeteer_fill',
+    'chrome_fill',
     fillParamsSchema,
     async (params) => {
       return await fill(params);
@@ -197,7 +197,7 @@ export const formTools = {
   ),
   
   select: new Tool(
-    'puppeteer_select',
+    'chrome_select',
     selectParamsSchema,
     async (params) => {
       return await select(params);
@@ -211,7 +211,7 @@ export const formTools = {
  */
 export const cookieTools = {
   cookies: new Tool(
-    'puppeteer_cookies',
+    'chrome_cookies',
     cookieParamsSchema,
     async (params) => {
       return await cookies(params);
@@ -225,7 +225,7 @@ export const cookieTools = {
  */
 export const scriptingTools = {
   evaluate: new Tool(
-    'puppeteer_evaluate',
+    'chrome_evaluate',
     evaluateParamsSchema,
     async (params) => {
       return await evaluate(params);
@@ -239,7 +239,7 @@ export const scriptingTools = {
  */
 export const chainingTools = {
   chain: new Tool(
-    'puppeteer_chain',
+    'chrome_chain',
     chainParamsSchema,
     async (params) => {
       return await chain(params);
@@ -249,7 +249,7 @@ export const chainingTools = {
 };
 
 /**
- * All Puppeteer tools
+ * All Chrome Control tools
  */
 export const allTools = [
   ...Object.values(browserManagementTools),

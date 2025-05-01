@@ -35,7 +35,7 @@
       "type": "stdio",
       "command": "gh-cli-mcp"
     },
-    "puppeteer": {
+    "chrome": {
       "type": "stdio",
       "command": "npx",
       "args": ["mcp-chrome-control"],
