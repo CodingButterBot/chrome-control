@@ -19,6 +19,9 @@ chrome-control/
 ├── tests/                 # Test files
 │   ├── examples/          # Example usage scripts
 │   └── ...                # Unit and integration tests
+├── .github/               # GitHub templates and issue definitions
+│   ├── ISSUES/            # Issue descriptions and requirements
+│   └── ISSUE_TEMPLATE/    # Templates for creating new issues
 ├── CLAUDE.md              # This file - instructions for Claude AI
 ├── README.md              # Project documentation
 ├── package.json           # Dependencies and scripts
@@ -88,6 +91,39 @@ chrome-control/
 - Verify proper error handling for all tools
 - Test on different operating systems when possible
 
+## 📋 Repository Management Guidelines
+
+### Branch Management
+- Main branch (`main`) is the primary branch for releases
+- Feature branches should be created from `main` with pattern `feature/feature-name`
+- Bug fix branches should follow pattern `fix/bug-name`
+- Branches should be merged via pull requests
+
+### Issue Management
+- All significant code changes should reference an issue
+- Issues are stored in `.github/ISSUES/` directory for access by Claude
+- Issues should have clear requirements and acceptance criteria
+- Use consistent issue numbering (3-digit, zero-padded: 001, 002, etc.)
+
+### Commit Standards
+- Use descriptive commit messages explaining why, not just what
+- Link commits to issues with `Fixes #X` or `Relates to #X` in commit messages
+- Keep commits focused on a single logical change
+- Include tests with implementation changes
+
+### Pull Request Process
+1. Create feature branch from `main`
+2. Implement changes according to issue requirements
+3. Create PR back to `main` with reference to issue
+4. Ensure tests pass before merging
+5. Use PR description to explain changes and implementation decisions
+
+### Code Review Guidelines
+- Check adherence to code style
+- Verify changes fulfill requirements in associated issue
+- Ensure sufficient test coverage
+- Review security implications
+
 ## 🔄 Recent Changes and Work Continuity
 
 ### Latest Improvements
@@ -107,6 +143,12 @@ chrome-control/
    - Created separate examples directory
    - Improved documentation and README
    - Added comprehensive gitignore rules
+   - Changed default branch from master to main
+
+4. **Browser Configuration**
+   - Browsers launch in windowed mode (not headless) by default
+   - Added stealth plugin configuration for bot detection avoidance
+   - Implemented human-like behavior emulation
 
 ### Known Issues
 - Error response "Method not found" sometimes occurs in tests
