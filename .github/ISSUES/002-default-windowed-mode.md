@@ -10,10 +10,10 @@ Currently, browser instances are launched with headless mode set to false, but w
 - Add tests that verify browser visibility settings
 
 ## Acceptance Criteria
-- [ ] Default browser launch options in `browser-manager.ts` maintain `headless: false` 
-- [ ] All tests run with visible browser windows by default
-- [ ] Documentation clearly explains how to change browser visibility
-- [ ] Configuration of browser visibility is accessible through the API
+- [x] Default browser launch options in `browser-manager.ts` maintain `headless: false` 
+- [x] All tests run with visible browser windows by default
+- [x] Documentation clearly explains how to change browser visibility
+- [x] Configuration of browser visibility is accessible through the API
 
 ## Additional Notes
 This will help developers and LLMs debug and observe browser automation in real-time, which is valuable for development and testing purposes.
