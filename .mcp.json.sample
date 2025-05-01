@@ -1,0 +1,50 @@
+{
+  "mcpServers": {
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+    "coworker": {
+      "type": "stdio",
+      "command": "claude",
+      "args": [
+        "mcp",
+        "serve"
+      ]
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "chrome-control-mcp"
+      ],
+      "env": {}
+    },
+    "smtp_gmail": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "mcp-smtp-gmail"
+      ],
+      "env": {
+        "SMTP_SERVER": "smtp.gmail.com",
+        "SMTP_PORT": "465",
+        "IMAP_SERVER": "imap.gmail.com",
+        "IMAP_PORT": "993",
+        "USER_EMAIL": "your-email@gmail.com",
+        "USER_PASSWORD": "your-app-password"
+      }
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "gh-cli-mcp"
+      ]
+    }
+  }
+}
