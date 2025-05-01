@@ -199,3 +199,50 @@ export interface CookieParams extends BasePuppeteerParams {
 export interface EvaluateParams extends BasePuppeteerParams {
   script: string;
 }
+
+/**
+ * Action type for chaining operations
+ */
+export type ActionType = 
+  'navigate' | 
+  'click' | 
+  'hover' | 
+  'fill' | 
+  'select' | 
+  'wait' | 
+  'screenshot' | 
+  'keyboard' | 
+  'mouse' | 
+  'evaluate' | 
+  'cookies';
+
+/**
+ * Individual action in an action chain
+ */
+export interface ChainAction {
+  type: ActionType;
+  params: 
+    | NavigateParams 
+    | ClickParams 
+    | HoverParams 
+    | FillParams 
+    | SelectParams 
+    | WaitParams 
+    | ScreenshotParams
+    | KeyboardParams
+    | MouseParams
+    | EvaluateParams
+    | CookieParams;
+  condition?: {
+    previousAction: number;  // Index of the previous action to check
+    expectedStatus: 'success' | 'error';  // Expected status to continue
+  };
+}
+
+/**
+ * Parameters for action chaining
+ */
+export interface ChainParams extends BasePuppeteerParams {
+  actions: ChainAction[];
+  stopOnError?: boolean;  // Whether to stop the chain if an action fails (default: true)
+}

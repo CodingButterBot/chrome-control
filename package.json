@@ -16,7 +16,8 @@
     "test:enhanced": "node tests/test-mcp-enhanced.js",
     "test:navigation": "node tests/test-enhanced-navigation.js",
     "test:filtering": "node tests/test-dom-filtering.js",
-    "test:all": "npm run test:browser && npm run test:mcp && npm run test:enhanced && npm run test:navigation && npm run test:filtering",
+    "test:chaining": "node tests/test-action-chaining.js",
+    "test:all": "npm run test:browser && npm run test:mcp && npm run test:enhanced && npm run test:navigation && npm run test:filtering && npm run test:chaining",
     "example:puppies": "node tests/examples/duckduckgo-puppies.js",
     "postinstall": "npm run build",
     "prepare": "npm run build"

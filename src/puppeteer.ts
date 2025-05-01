@@ -1009,6 +1009,162 @@ export async function checkPuppeteer(): Promise<boolean> {
 }
 
 /**
+ * Action chaining for multiple operations
+ */
+export async function chain(params: ChainParams): Promise<{
+  content: Array<{ type: string; text: string | { src: string; alt: string } }>;
+}> {
+  try {
+    // Initialize response content
+    const content: Array<{ type: string; text: string | { src: string; alt: string } }> = [
+      { type: 'text', text: 'Starting action chain execution' }
+    ];
+    
+    // Get page
+    const { page, browserId, pageId } = await browserManager.getPage(params.tabId, params.browserId);
+    
+    // Store action results for conditional execution
+    const actionResults: Array<{ success: boolean, result: any }> = [];
+    
+    // Execute each action in sequence
+    for (let i = 0; i < params.actions.length; i++) {
+      const action = params.actions[i];
+      console.error(`Executing chain action ${i + 1}/${params.actions.length}: ${action.type}`);
+      
+      // Check condition for execution if specified
+      if (action.condition) {
+        const { previousAction, expectedStatus } = action.condition;
+        
+        // Ensure the previous action index is valid
+        if (previousAction < 0 || previousAction >= i) {
+          console.error(`Invalid previous action index: ${previousAction}`);
+          content.push({ type: 'text', text: `Skipping action ${i + 1} due to invalid condition reference` });
+          actionResults.push({ success: false, result: null });
+          continue;
+        }
+        
+        // Check if the condition is met
+        const prevResult = actionResults[previousAction];
+        const shouldExecute = 
+          (expectedStatus === 'success' && prevResult.success) || 
+          (expectedStatus === 'error' && !prevResult.success);
+        
+        if (!shouldExecute) {
+          console.error(`Condition not met, skipping action ${i + 1}`);
+          content.push({ type: 'text', text: `Skipping action ${i + 1} because condition was not met` });
+          actionResults.push({ success: false, result: null });
+          continue;
+        }
+      }
+      
+      // Add browser and tab IDs to params if not specified
+      const actionParams = {
+        ...action.params,
+        browserId: action.params.browserId || browserId,
+        tabId: action.params.tabId || pageId
+      };
+      
+      let result;
+      let success = true;
+      
+      try {
+        // Execute the action based on type
+        switch (action.type) {
+          case 'navigate':
+            result = await navigate(actionParams as NavigateParams);
+            break;
+          case 'click':
+            result = await click(actionParams as ClickParams);
+            break;
+          case 'hover':
+            result = await hover(actionParams as HoverParams);
+            break;
+          case 'fill':
+            result = await fill(actionParams as FillParams);
+            break;
+          case 'select':
+            result = await select(actionParams as SelectParams);
+            break;
+          case 'wait':
+            result = await wait(actionParams as WaitParams);
+            break;
+          case 'screenshot':
+            result = await screenshot(actionParams as ScreenshotParams);
+            break;
+          case 'keyboard':
+            result = await keyboard(actionParams as KeyboardParams);
+            break;
+          case 'mouse':
+            result = await mouse(actionParams as MouseParams);
+            break;
+          case 'evaluate':
+            result = await evaluate(actionParams as EvaluateParams);
+            break;
+          case 'cookies':
+            result = await cookies(actionParams as CookieParams);
+            break;
+          default:
+            console.error(`Unsupported action type: ${action.type}`);
+            content.push({ type: 'text', text: `Error: Unsupported action type '${action.type}'` });
+            success = false;
+            break;
+        }
+        
+        // Add action result to content
+        if (result && result.content) {
+          content.push({ 
+            type: 'text', 
+            text: `Action ${i + 1} (${action.type}) result:` 
+          });
+          
+          // Add result content with proper indentation
+          result.content.forEach(item => {
+            if (typeof item.text === 'string') {
+              content.push({ 
+                type: 'text', 
+                text: `  ${item.text}` 
+              });
+            } else {
+              // Handle images/screenshots
+              content.push(item);
+            }
+          });
+        }
+        
+      } catch (error) {
+        console.error(`Error executing action ${i + 1} (${action.type}):`, error);
+        content.push({ 
+          type: 'text', 
+          text: `Error in action ${i + 1} (${action.type}): ${(error as Error)?.message || String(error)}` 
+        });
+        success = false;
+        
+        // Stop chain execution if stopOnError is true (default)
+        if (params.stopOnError !== false) {
+          content.push({ type: 'text', text: 'Chain execution stopped due to error' });
+          break;
+        }
+      }
+      
+      // Store action result for conditional execution
+      actionResults.push({ success, result });
+    }
+    
+    content.push({ type: 'text', text: 'Chain execution completed' });
+    
+    return { content };
+  } catch (error) {
+    console.error('Error in action chain:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error in action chain:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+/**
  * Close all browsers on shutdown
  */
 export async function closeAllBrowsers(): Promise<void> {

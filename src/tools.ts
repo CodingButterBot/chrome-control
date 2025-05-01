@@ -16,7 +16,8 @@ import {
   wait,
   mouse,
   keyboard,
-  cookies
+  cookies,
+  chain
 } from './puppeteer.js';
 import {
   navigateParamsSchema,
@@ -31,7 +32,8 @@ import {
   waitParamsSchema,
   mouseParamsSchema,
   keyboardParamsSchema,
-  cookieParamsSchema
+  cookieParamsSchema,
+  chainParamsSchema
 } from './register.js';
 
 /**
@@ -233,6 +235,20 @@ export const scriptingTools = {
 };
 
 /**
+ * Action chaining tools
+ */
+export const chainingTools = {
+  chain: new Tool(
+    'puppeteer_chain',
+    chainParamsSchema,
+    async (params) => {
+      return await chain(params);
+    },
+    { description: 'Execute multiple actions in a single call' }
+  )
+};
+
+/**
  * All Puppeteer tools
  */
 export const allTools = [
@@ -244,5 +260,6 @@ export const allTools = [
   ...Object.values(keyboardTools),
   ...Object.values(formTools),
   ...Object.values(cookieTools),
-  ...Object.values(scriptingTools)
+  ...Object.values(scriptingTools),
+  ...Object.values(chainingTools)
 ];

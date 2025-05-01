@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PuppeteerMcpServer, Tool } from './stdio.js';
+import { ActionType } from './types/puppeteer.js';
 
 /**
  * ZodSchema for base Puppeteer parameters
@@ -143,6 +144,35 @@ export const cookieParamsSchema = basePuppeteerParamsSchema.extend({
  */
 export const evaluateParamsSchema = basePuppeteerParamsSchema.extend({
   script: z.string().describe('JavaScript code to execute')
+});
+
+/**
+ * Action chain schemas
+ */
+export const chainActionSchema = z.object({
+  type: z.enum([
+    'navigate', 
+    'click', 
+    'hover', 
+    'fill', 
+    'select', 
+    'wait', 
+    'screenshot', 
+    'keyboard', 
+    'mouse', 
+    'evaluate', 
+    'cookies'
+  ] as [ActionType, ...ActionType[]]).describe('Type of action to perform'),
+  params: z.record(z.any()).describe('Parameters for the action'),
+  condition: z.object({
+    previousAction: z.number().int().min(0).describe('Index of previous action to check (0-based)'),
+    expectedStatus: z.enum(['success', 'error']).describe('Expected status of the previous action')
+  }).optional().describe('Conditional execution')
+});
+
+export const chainParamsSchema = basePuppeteerParamsSchema.extend({
+  actions: z.array(chainActionSchema).min(1).describe('Array of actions to execute in sequence'),
+  stopOnError: z.boolean().optional().describe('Whether to stop if an action fails (default: true)')
 });
 
 /**
