@@ -1,87 +1,322 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
-import { NavigateParams, ScreenshotParams, ClickParams, FillParams, SelectParams, HoverParams, EvaluateParams } from './types/puppeteer.js';
-
-// Global browser instance
-let browser: Browser | null = null;
-let page: Page | null = null;
-
-// Default options for launching the browser
-const DEFAULT_LAUNCH_OPTIONS = {
-  headless: false, // Use windowed mode
-  defaultViewport: { width: 1280, height: 800 },
-  executablePath: process.env.CHROME_PATH || undefined, // Allow custom Chrome path
-  args: [
-    '--no-sandbox', 
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
-    '--no-first-run',
-    '--no-zygote',
-    '--disable-gpu'
-  ]
-};
-
-// Command execution timeout in milliseconds (30 seconds)
-const COMMAND_TIMEOUT = 30000;
+import { Page, KeyInput } from 'puppeteer';
+import { 
+  NavigateParams, 
+  ScreenshotParams, 
+  ClickParams, 
+  FillParams, 
+  SelectParams, 
+  HoverParams, 
+  EvaluateParams,
+  BrowserParams,
+  TabParams,
+  KeyboardParams,
+  MouseParams,
+  WaitParams,
+  CookieParams
+} from './types/puppeteer.js';
+import { browserManager, COMMAND_TIMEOUT, DEFAULT_LAUNCH_OPTIONS } from './browser-manager.js';
 
 /**
- * Initialize the browser if not already initialized
+ * Browser management commands
  */
-async function ensureBrowserInitialized(params?: NavigateParams): Promise<Browser> {
-  if (!browser) {
-    const launchOptions = params?.launchOptions || DEFAULT_LAUNCH_OPTIONS;
-    
-    // Security check is disabled for Linux compatibility
-    // Always allow dangerous flags on Linux
-    const modifiedParams = params ? { ...params, allowDangerous: true } : { allowDangerous: true };
-    
-    try {
-      console.error('Launching browser with options:', JSON.stringify(launchOptions));
-      browser = await puppeteer.launch(launchOptions);
-      console.error('Browser successfully launched');
-    } catch (error) {
-      console.error('Failed to launch browser:', error);
-      throw error;
-    }
-  }
-  return browser;
-}
-
-/**
- * Get the current page or create a new one
- */
-async function getPage(): Promise<Page> {
-  const activeBrowser = await ensureBrowserInitialized();
-  
-  if (!page) {
-    const pages = await activeBrowser.pages();
-    page = pages.length > 0 ? pages[0] : await activeBrowser.newPage();
-  }
-  
-  return page;
-}
-
-/**
- * Navigate to a URL
- */
-export async function navigate(params: NavigateParams): Promise<{
+export async function createBrowser(params: BrowserParams): Promise<{
   content: Array<{ type: string; text: string }>;
 }> {
   try {
-    // Initialize browser with provided launch options if any
-    await ensureBrowserInitialized(params);
-    const activePage = await getPage();
+    // Create a new browser instance with options if provided
+    const browserId = await browserManager.launchBrowser(
+      params.launchOptions ? { ...DEFAULT_LAUNCH_OPTIONS, ...params.launchOptions } : undefined
+    );
     
-    console.error(`Navigating to: ${params.url}`);
-    await activePage.goto(params.url, { waitUntil: 'networkidle2', timeout: COMMAND_TIMEOUT });
-    
-    const title = await activePage.title();
     return {
       content: [
-        { type: 'text', text: `Successfully navigated to ${params.url}` },
-        { type: 'text', text: `Page title: ${title}` }
+        { type: 'text', text: `Browser launched successfully` },
+        { type: 'text', text: `Browser ID: ${browserId}` }
       ]
     };
+  } catch (error) {
+    console.error('Error creating browser:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error creating browser:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+export async function listBrowsers(): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const browsers = browserManager.listBrowsers();
+    
+    return {
+      content: [
+        { type: 'text', text: `Available browsers: ${browsers.length}` },
+        ...browsers.map(browser => ({ 
+          type: 'text', 
+          text: `ID: ${browser.id}, Pages: ${browser.pagesCount}, Created: ${browser.createdAt.toISOString()}, Last used: ${browser.lastUsed.toISOString()}` 
+        }))
+      ]
+    };
+  } catch (error) {
+    console.error('Error listing browsers:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error listing browsers:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+export async function closeBrowser(params: BrowserParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const result = await browserManager.closeBrowser(params.browserId);
+    
+    return {
+      content: [
+        { type: 'text', text: result 
+          ? `Browser closed successfully` 
+          : `Browser not found or already closed` 
+        }
+      ]
+    };
+  } catch (error) {
+    console.error('Error closing browser:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error closing browser:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+/**
+ * Tab management commands
+ */
+export async function createTab(params: TabParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const { browserId, pageId } = await browserManager.createPage(params.browserId);
+    
+    return {
+      content: [
+        { type: 'text', text: `New tab created` },
+        { type: 'text', text: `Browser ID: ${browserId}, Tab ID: ${pageId}` }
+      ]
+    };
+  } catch (error) {
+    console.error('Error creating tab:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error creating tab:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+export async function listTabs(params: BrowserParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const pages = await browserManager.listPages(params.browserId);
+    
+    return {
+      content: [
+        { type: 'text', text: `Available tabs: ${pages.length}` },
+        ...pages.map(page => ({ 
+          type: 'text', 
+          text: `ID: ${page.id}, URL: ${page.url}, Title: ${page.title}` 
+        }))
+      ]
+    };
+  } catch (error) {
+    console.error('Error listing tabs:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error listing tabs:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+export async function closeTab(params: TabParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  if (!params.tabId) {
+    return {
+      content: [
+        { type: 'text', text: 'Error: Tab ID is required' }
+      ]
+    };
+  }
+  
+  try {
+    const result = await browserManager.closePage(params.tabId, params.browserId);
+    
+    return {
+      content: [
+        { type: 'text', text: result 
+          ? `Tab closed successfully` 
+          : `Tab not found or already closed` 
+        }
+      ]
+    };
+  } catch (error) {
+    console.error('Error closing tab:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error closing tab:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+/**
+ * Navigation commands
+ */
+export async function navigate(params: NavigateParams): Promise<{
+  content: Array<{ type: string; text: string | { src: string; alt: string } }>;
+}> {
+  try {
+    // Get page
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    
+    console.error(`Navigating to: ${params.url}`);
+    await page.goto(params.url, { 
+      waitUntil: params.waitUntil || 'networkidle2', 
+      timeout: params.timeout || COMMAND_TIMEOUT 
+    });
+    
+    // Default content response
+    const content: Array<{ type: string; text: string | { src: string; alt: string } }> = [
+      { type: 'text', text: `Successfully navigated to ${params.url}` }
+    ];
+    
+    // Handle custom response format if provided
+    if (params.responseFormat) {
+      const format = params.responseFormat;
+      
+      // Include page title
+      if (format.pageTitle !== false) { // Default to true
+        const title = await page.title();
+        content.push({ type: 'text', text: `Page title: ${title}` });
+      }
+      
+      // Include screenshot if requested
+      if (format.screenshot) {
+        console.error('Taking screenshot as part of navigation response');
+        const screenshotOptions: any = {};
+        if (format.fullPage) {
+          screenshotOptions.fullPage = true;
+        }
+        
+        const screenshotBuffer = await page.screenshot(screenshotOptions);
+        const base64Image = Buffer.from(screenshotBuffer).toString('base64');
+        
+        content.push({ 
+          type: 'text', 
+          text: { 
+            src: `data:image/png;base64,${base64Image}`,
+            alt: 'Navigation Screenshot'
+          }
+        });
+      }
+      
+      // Include page text if requested
+      if (format.pageText) {
+        console.error('Extracting page text');
+        const pageText = await page.evaluate(() => document.body.innerText);
+        content.push({ type: 'text', text: `Page text: ${pageText}` });
+      }
+      
+      // Extract elements if requested
+      if (format.elements && format.elements.selector) {
+        console.error(`Extracting elements matching selector: ${format.elements.selector}`);
+        const elementsData = await page.evaluate((selector, options) => {
+          const elements = Array.from(document.querySelectorAll(selector));
+          return elements.map(el => {
+            const data: any = {};
+            
+            // Include attributes if requested
+            if (options.attributes && options.attributes.length > 0) {
+              data.attributes = {};
+              options.attributes.forEach(attr => {
+                data.attributes[attr] = (el as HTMLElement).getAttribute(attr);
+              });
+            }
+            
+            // Include text content if requested
+            if (options.includeText) {
+              data.text = (el as HTMLElement).innerText;
+            }
+            
+            // Include HTML if requested
+            if (options.includeHTML) {
+              data.html = (el as HTMLElement).outerHTML;
+            }
+            
+            return data;
+          });
+        }, format.elements.selector, {
+          attributes: format.elements.attributes || [],
+          includeText: format.elements.includeText || false,
+          includeHTML: format.elements.includeHTML || false
+        });
+        
+        content.push({ type: 'text', text: `Elements found: ${elementsData.length}` });
+        content.push({ type: 'text', text: JSON.stringify(elementsData, null, 2) });
+      }
+      
+      // Include links if requested
+      if (format.links) {
+        console.error('Extracting links from page');
+        const links = await page.evaluate(() => {
+          return Array.from(document.querySelectorAll('a')).map(a => ({
+            href: a.href,
+            text: a.innerText,
+            title: a.getAttribute('title')
+          }));
+        });
+        
+        content.push({ type: 'text', text: `Links found: ${links.length}` });
+        content.push({ type: 'text', text: JSON.stringify(links, null, 2) });
+      }
+      
+      // Include inputs if requested
+      if (format.inputs) {
+        console.error('Extracting input fields from page');
+        const inputs = await page.evaluate(() => {
+          return Array.from(document.querySelectorAll('input, textarea, select')).map(input => {
+            const element = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+            return {
+              type: element.tagName.toLowerCase(),
+              inputType: element.getAttribute('type') || '',
+              id: element.id,
+              name: element.getAttribute('name'),
+              placeholder: element.getAttribute('placeholder'),
+              value: element.tagName.toLowerCase() === 'select' ? '' : (element as HTMLInputElement).value,
+              isRequired: element.hasAttribute('required'),
+              isDisabled: element.hasAttribute('disabled')
+            };
+          });
+        });
+        
+        content.push({ type: 'text', text: `Input fields found: ${inputs.length}` });
+        content.push({ type: 'text', text: JSON.stringify(inputs, null, 2) });
+      }
+    }
+    
+    return { content };
   } catch (error) {
     console.error('Error navigating:', error);
     return {
@@ -94,19 +329,98 @@ export async function navigate(params: NavigateParams): Promise<{
 }
 
 /**
- * Take a screenshot
+ * Wait for behaviors
+ */
+export async function wait(params: WaitParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const timeout = params.timeout || COMMAND_TIMEOUT;
+    
+    if (params.selector) {
+      console.error(`Waiting for selector: ${params.selector}`);
+      await page.waitForSelector(params.selector, { timeout });
+      return {
+        content: [
+          { type: 'text', text: `Successfully waited for selector: ${params.selector}` }
+        ]
+      };
+    } 
+    else if (params.xpath) {
+      console.error(`Waiting for XPath: ${params.xpath}`);
+      // Using evaluate as a workaround since waitForXPath is deprecated
+      await page.waitForFunction((xpath) => {
+        const result = document.evaluate(
+          xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
+        );
+        return result.singleNodeValue !== null;
+      }, { timeout }, params.xpath);
+      
+      return {
+        content: [
+          { type: 'text', text: `Successfully waited for XPath: ${params.xpath}` }
+        ]
+      };
+    }
+    else if (params.function) {
+      console.error(`Waiting for function to evaluate to true`);
+      await page.waitForFunction(params.function, { timeout });
+      return {
+        content: [
+          { type: 'text', text: `Successfully waited for function to evaluate to true` }
+        ]
+      };
+    }
+    else if (params.navigation) {
+      console.error(`Waiting for navigation to complete`);
+      await page.waitForNavigation({ waitUntil: params.waitUntil || 'networkidle2', timeout });
+      return {
+        content: [
+          { type: 'text', text: `Successfully waited for navigation to complete` }
+        ]
+      };
+    }
+    else if (params.time) {
+      console.error(`Waiting for ${params.time}ms`);
+      await new Promise(resolve => setTimeout(resolve, params.time));
+      return {
+        content: [
+          { type: 'text', text: `Successfully waited for ${params.time}ms` }
+        ]
+      };
+    }
+    
+    return {
+      content: [
+        { type: 'text', text: `Error: No wait condition specified` }
+      ]
+    };
+  } catch (error) {
+    console.error('Error waiting:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error waiting:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+/**
+ * Taking screenshots
  */
 export async function screenshot(params: ScreenshotParams): Promise<{
   content: Array<{ type: string; text: string | { src: string; alt: string } }>;
 }> {
   try {
-    const activePage = await getPage();
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
     // Adjust viewport if dimensions provided
     if (params.width || params.height) {
-      await activePage.setViewport({
-        width: params.width || 800,
-        height: params.height || 600
+      await page.setViewport({
+        width: params.width || 1280,
+        height: params.height || 800
       });
     }
     
@@ -114,7 +428,7 @@ export async function screenshot(params: ScreenshotParams): Promise<{
     let screenshotBuffer: Buffer;
     if (params.selector) {
       console.error(`Taking screenshot of element: ${params.selector}`);
-      const element = await activePage.$(params.selector);
+      const element = await page.$(params.selector);
       if (!element) {
         throw new Error(`Element not found: ${params.selector}`);
       }
@@ -122,7 +436,7 @@ export async function screenshot(params: ScreenshotParams): Promise<{
       screenshotBuffer = Buffer.from(elementScreenshot);
     } else {
       console.error('Taking full page screenshot');
-      const pageScreenshot = await activePage.screenshot();
+      const pageScreenshot = await page.screenshot({ fullPage: params.fullPage });
       screenshotBuffer = Buffer.from(pageScreenshot);
     }
     
@@ -153,21 +467,25 @@ export async function screenshot(params: ScreenshotParams): Promise<{
 }
 
 /**
- * Click an element
+ * Mouse interactions
  */
 export async function click(params: ClickParams): Promise<{
   content: Array<{ type: string; text: string }>;
 }> {
   try {
-    const activePage = await getPage();
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.error(`Clicking element: ${params.selector}`);
     
     // Wait for the element to appear
-    await activePage.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
+    await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
     
-    // Click the element
-    await activePage.click(params.selector);
+    // Click with options if provided
+    if (params.options) {
+      await page.click(params.selector, params.options);
+    } else {
+      await page.click(params.selector);
+    }
     
     return {
       content: [
@@ -185,25 +503,170 @@ export async function click(params: ClickParams): Promise<{
   }
 }
 
+export async function hover(params: HoverParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    
+    console.error(`Hovering over element: ${params.selector}`);
+    
+    // Wait for the element to appear
+    await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
+    
+    // Hover over the element
+    await page.hover(params.selector);
+    
+    return {
+      content: [
+        { type: 'text', text: `Successfully hovered over ${params.selector}` }
+      ]
+    };
+  } catch (error) {
+    console.error('Error hovering over element:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error hovering over element:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+export async function mouse(params: MouseParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    
+    // Get mouse object
+    const mouse = page.mouse;
+    
+    // Execute the specified mouse action
+    switch (params.action) {
+      case 'move':
+        if (typeof params.x !== 'number' || typeof params.y !== 'number') {
+          throw new Error('X and Y coordinates are required for mouse move action');
+        }
+        console.error(`Moving mouse to coordinates: ${params.x}, ${params.y}`);
+        await mouse.move(params.x, params.y);
+        break;
+      case 'down':
+        console.error(`Pressing mouse button: ${params.button || 'left'}`);
+        await mouse.down({ button: (params.button || 'left') as any });
+        break;
+      case 'up':
+        console.error(`Releasing mouse button: ${params.button || 'left'}`);
+        await mouse.up({ button: (params.button || 'left') as any });
+        break;
+      case 'click':
+        if (typeof params.x !== 'number' || typeof params.y !== 'number') {
+          throw new Error('X and Y coordinates are required for mouse click action');
+        }
+        console.error(`Clicking at coordinates: ${params.x}, ${params.y}`);
+        await mouse.click(params.x, params.y, { button: (params.button || 'left') as any });
+        break;
+      default:
+        throw new Error(`Unsupported mouse action: ${params.action}`);
+    }
+    
+    return {
+      content: [
+        { type: 'text', text: `Successfully performed mouse ${params.action}` }
+      ]
+    };
+  } catch (error) {
+    console.error('Error performing mouse action:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error performing mouse action:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
 /**
- * Fill a form field
+ * Keyboard interactions
+ */
+export async function keyboard(params: KeyboardParams): Promise<{
+  content: Array<{ type: string; text: string }>;
+}> {
+  try {
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    
+    // Get keyboard object
+    const keyboard = page.keyboard;
+    
+    // Execute the specified keyboard action
+    switch (params.action) {
+      case 'type':
+        if (!params.text) {
+          throw new Error('Text parameter is required for keyboard type action');
+        }
+        console.error(`Typing text: ${params.text.substring(0, 20)}${params.text.length > 20 ? '...' : ''}`);
+        await keyboard.type(params.text, { delay: params.delay || undefined });
+        break;
+      case 'press':
+        if (!params.key) {
+          throw new Error('Key parameter is required for keyboard press action');
+        }
+        console.error(`Pressing key: ${params.key}`);
+        await keyboard.press(params.key as KeyInput, { delay: params.delay || undefined });
+        break;
+      case 'down':
+        if (!params.key) {
+          throw new Error('Key parameter is required for keyboard down action');
+        }
+        console.error(`Holding down key: ${params.key}`);
+        await keyboard.down(params.key as KeyInput);
+        break;
+      case 'up':
+        if (!params.key) {
+          throw new Error('Key parameter is required for keyboard up action');
+        }
+        console.error(`Releasing key: ${params.key}`);
+        await keyboard.up(params.key as KeyInput);
+        break;
+      default:
+        throw new Error(`Unsupported keyboard action: ${params.action}`);
+    }
+    
+    return {
+      content: [
+        { type: 'text', text: `Successfully performed keyboard ${params.action}` }
+      ]
+    };
+  } catch (error) {
+    console.error('Error performing keyboard action:', error);
+    return {
+      content: [
+        { type: 'text', text: 'Error performing keyboard action:' },
+        { type: 'text', text: (error as Error)?.message || String(error) }
+      ]
+    };
+  }
+}
+
+/**
+ * Form interactions
  */
 export async function fill(params: FillParams): Promise<{
   content: Array<{ type: string; text: string }>;
 }> {
   try {
-    const activePage = await getPage();
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.error(`Filling form field: ${params.selector} with value (length: ${params.value.length})`);
     
     // Wait for the element to appear
-    await activePage.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
+    await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
     
     // Clear the field first (click and select all text)
-    await activePage.click(params.selector, { clickCount: 3 });
+    await page.click(params.selector, { clickCount: 3 });
     
     // Type the new value
-    await activePage.type(params.selector, params.value);
+    await page.type(params.selector, params.value);
     
     return {
       content: [
@@ -221,22 +684,19 @@ export async function fill(params: FillParams): Promise<{
   }
 }
 
-/**
- * Select an option from a dropdown
- */
 export async function select(params: SelectParams): Promise<{
   content: Array<{ type: string; text: string }>;
 }> {
   try {
-    const activePage = await getPage();
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.error(`Selecting option '${params.value}' from: ${params.selector}`);
     
     // Wait for the element to appear
-    await activePage.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
+    await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
     
     // Select the option
-    await activePage.select(params.selector, params.value);
+    await page.select(params.selector, params.value);
     
     return {
       content: [
@@ -255,32 +715,71 @@ export async function select(params: SelectParams): Promise<{
 }
 
 /**
- * Hover over an element
+ * Cookie management
  */
-export async function hover(params: HoverParams): Promise<{
+export async function cookies(params: CookieParams): Promise<{
   content: Array<{ type: string; text: string }>;
 }> {
   try {
-    const activePage = await getPage();
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Hovering over element: ${params.selector}`);
-    
-    // Wait for the element to appear
-    await activePage.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
-    
-    // Hover over the element
-    await activePage.hover(params.selector);
-    
-    return {
-      content: [
-        { type: 'text', text: `Successfully hovered over ${params.selector}` }
-      ]
-    };
+    switch (params.action) {
+      case 'get':
+        console.error(`Getting cookies for current page`);
+        const cookies = await page.cookies();
+        return {
+          content: [
+            { type: 'text', text: `Cookies retrieved: ${cookies.length}` },
+            { type: 'text', text: JSON.stringify(cookies, null, 2) }
+          ]
+        };
+        
+      case 'set':
+        if (!params.cookie) {
+          throw new Error('Cookie object is required for set action');
+        }
+        console.error(`Setting cookie: ${params.cookie.name}`);
+        await page.setCookie(params.cookie);
+        return {
+          content: [
+            { type: 'text', text: `Successfully set cookie: ${params.cookie.name}` }
+          ]
+        };
+        
+      case 'delete':
+        if (!params.names || params.names.length === 0) {
+          throw new Error('Cookie names array is required for delete action');
+        }
+        console.error(`Deleting cookies: ${params.names.join(', ')}`);
+        
+        for (const name of params.names) {
+          await page.deleteCookie({ name });
+        }
+        
+        return {
+          content: [
+            { type: 'text', text: `Successfully deleted cookies: ${params.names.join(', ')}` }
+          ]
+        };
+        
+      case 'clear':
+        console.error(`Clearing all cookies`);
+        const allCookies = await page.cookies();
+        await page.deleteCookie(...allCookies);
+        return {
+          content: [
+            { type: 'text', text: `Successfully cleared ${allCookies.length} cookies` }
+          ]
+        };
+        
+      default:
+        throw new Error(`Unsupported cookie action: ${params.action}`);
+    }
   } catch (error) {
-    console.error('Error hovering over element:', error);
+    console.error('Error managing cookies:', error);
     return {
       content: [
-        { type: 'text', text: 'Error hovering over element:' },
+        { type: 'text', text: 'Error managing cookies:' },
         { type: 'text', text: (error as Error)?.message || String(error) }
       ]
     };
@@ -288,18 +787,18 @@ export async function hover(params: HoverParams): Promise<{
 }
 
 /**
- * Evaluate JavaScript in the browser context
+ * JavaScript evaluation
  */
 export async function evaluate(params: EvaluateParams): Promise<{
   content: Array<{ type: string; text: string }>;
 }> {
   try {
-    const activePage = await getPage();
+    const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.error(`Evaluating JavaScript: ${params.script.substring(0, 50)}...`);
     
     // Execute the script in browser context
-    const result = await activePage.evaluate(params.script);
+    const result = await page.evaluate(params.script);
     
     // Convert the result to string
     const resultString = typeof result === 'object' 
@@ -328,25 +827,13 @@ export async function evaluate(params: EvaluateParams): Promise<{
  */
 export async function checkPuppeteer(): Promise<boolean> {
   try {
-    // We can't directly access the version in ESM
+    // Get installed puppeteer version
     const puppeteerVersion = "24.x.x"; // Hardcoded for simplicity
     console.error('Puppeteer version:', puppeteerVersion);
     
-    // Try to launch a browser to confirm
-    const testBrowser = await puppeteer.launch({ 
-      headless: false,
-      executablePath: process.env.CHROME_PATH || undefined,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu'
-      ]
-    });
-    await testBrowser.close();
+    // Try to launch and close a browser
+    const browserId = await browserManager.launchBrowser();
+    await browserManager.closeBrowser(browserId);
     
     return true;
   } catch (error) {
@@ -356,13 +843,9 @@ export async function checkPuppeteer(): Promise<boolean> {
 }
 
 /**
- * Close the browser instance if it exists
+ * Close all browsers on shutdown
  */
-export async function closeBrowser(): Promise<void> {
-  if (browser) {
-    await browser.close();
-    browser = null;
-    page = null;
-    console.error('Browser instance closed');
-  }
+export async function closeAllBrowsers(): Promise<void> {
+  await browserManager.closeAllBrowsers();
+  console.error('All browser instances closed');
 }

@@ -58,10 +58,10 @@ async function runTest() {
     const request = {
       jsonrpc: '2.0',
       id: '1',
-      method: 'execute',
+      method: 'tools.call',
       params: {
-        tool: 'puppeteer_navigate',
-        params: {
+        name: 'puppeteer_navigate',
+        arguments: {
           url: 'https://www.google.com'
         }
       }

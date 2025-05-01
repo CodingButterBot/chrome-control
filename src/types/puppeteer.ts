@@ -30,8 +30,40 @@ export interface CustomTool {
  * Base parameter for Puppeteer commands
  */
 export interface BasePuppeteerParams {
+  browserId?: string;
+  tabId?: string;
+}
+
+/**
+ * Parameters for browser management
+ */
+export interface BrowserParams extends BasePuppeteerParams {
+  launchOptions?: Record<string, any>;
+}
+
+/**
+ * Parameters for tab management
+ */
+export interface TabParams extends BasePuppeteerParams {
   url?: string;
-  selector?: string;
+}
+
+/**
+ * Response format options
+ */
+export interface ResponseFormatOptions {
+  screenshot?: boolean;
+  fullPage?: boolean;
+  pageText?: boolean;
+  pageTitle?: boolean;
+  elements?: {
+    selector?: string;
+    attributes?: string[];
+    includeText?: boolean;
+    includeHTML?: boolean;
+  };
+  links?: boolean;
+  inputs?: boolean;
 }
 
 /**
@@ -39,8 +71,9 @@ export interface BasePuppeteerParams {
  */
 export interface NavigateParams extends BasePuppeteerParams {
   url: string;
-  allowDangerous?: boolean;
-  launchOptions?: Record<string, any>;
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2';
+  timeout?: number;
+  responseFormat?: ResponseFormatOptions;
 }
 
 /**
@@ -51,6 +84,18 @@ export interface ScreenshotParams extends BasePuppeteerParams {
   selector?: string;
   width?: number;
   height?: number;
+  fullPage?: boolean;
+}
+
+/**
+ * Parameters for mouse interactions
+ */
+export interface MouseParams extends BasePuppeteerParams {
+  action: 'move' | 'down' | 'up' | 'click';
+  x?: number;
+  y?: number;
+  button?: 'left' | 'right' | 'middle';
+  clickCount?: number;
 }
 
 /**
@@ -58,6 +103,11 @@ export interface ScreenshotParams extends BasePuppeteerParams {
  */
 export interface ClickParams extends BasePuppeteerParams {
   selector: string;
+  options?: {
+    button?: 'left' | 'right' | 'middle';
+    clickCount?: number;
+    delay?: number;
+  };
 }
 
 /**
@@ -66,6 +116,7 @@ export interface ClickParams extends BasePuppeteerParams {
 export interface FillParams extends BasePuppeteerParams {
   selector: string;
   value: string;
+  delay?: number;
 }
 
 /**
@@ -81,6 +132,47 @@ export interface SelectParams extends BasePuppeteerParams {
  */
 export interface HoverParams extends BasePuppeteerParams {
   selector: string;
+}
+
+/**
+ * Parameters for keyboard actions
+ */
+export interface KeyboardParams extends BasePuppeteerParams {
+  action: 'press' | 'down' | 'up' | 'type';
+  key?: string;
+  text?: string;
+  delay?: number;
+}
+
+/**
+ * Parameters for waiting behaviors
+ */
+export interface WaitParams extends BasePuppeteerParams {
+  selector?: string;
+  xpath?: string;
+  function?: string;
+  navigation?: boolean;
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2';
+  time?: number;
+  timeout?: number;
+}
+
+/**
+ * Parameters for cookie management
+ */
+export interface CookieParams extends BasePuppeteerParams {
+  action: 'get' | 'set' | 'delete' | 'clear';
+  cookie?: {
+    name: string;
+    value: string;
+    domain?: string;
+    path?: string;
+    expires?: number;
+    httpOnly?: boolean;
+    secure?: boolean;
+    sameSite?: 'Strict' | 'Lax' | 'None';
+  };
+  names?: string[];
 }
 
 /**

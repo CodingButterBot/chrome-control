@@ -14,6 +14,8 @@
     "test:browser": "node test-browser.js",
     "test:mcp": "node test-mcp.js",
     "test:enhanced": "node test-mcp-enhanced.js",
+    "test:navigation": "node test-enhanced-navigation.js",
+    "example:puppies": "node duckduckgo-puppies.js",
     "postinstall": "npm run build",
     "prepare": "npm run build"
   },

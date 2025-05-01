@@ -85,11 +85,11 @@
       "mcp__puppeteer__puppeteer_get_html",
       "mcp__puppeteer__puppeteer_get_attribute",
       "mcp__puppeteer__puppeteer_get_property",
-      "Bash(ls:*)",
-      "Bash(ls:*)",
-      "Bash(find:*)",
-      "Bash(find:*)"
+      "mcp__puppeteer__puppeteer_create_browser",
+      "mcp__puppeteer__puppeteer_create_browser",
+      "mcp__puppeteer__puppeteer_create_tab",
+      "mcp__puppeteer__puppeteer_create_tab"
     ],
-    "deny": []
+    "deny": ["Bash(gh:*)"]
   }
 }

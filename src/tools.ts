@@ -6,7 +6,17 @@ import {
   fill,
   select,
   hover,
-  evaluate
+  evaluate,
+  createBrowser,
+  listBrowsers,
+  closeBrowser,
+  createTab,
+  listTabs,
+  closeTab,
+  wait,
+  mouse,
+  keyboard,
+  cookies
 } from './puppeteer.js';
 import {
   navigateParamsSchema,
@@ -15,8 +25,78 @@ import {
   fillParamsSchema,
   selectParamsSchema,
   hoverParamsSchema,
-  evaluateParamsSchema
+  evaluateParamsSchema,
+  browserParamsSchema,
+  tabParamsSchema,
+  waitParamsSchema,
+  mouseParamsSchema,
+  keyboardParamsSchema,
+  cookieParamsSchema
 } from './register.js';
+
+/**
+ * Browser management tools
+ */
+export const browserManagementTools = {
+  createBrowser: new Tool(
+    'puppeteer_create_browser',
+    browserParamsSchema,
+    async (params) => {
+      return await createBrowser(params);
+    },
+    { description: 'Create a new browser instance with optional configuration' }
+  ),
+  
+  listBrowsers: new Tool(
+    'puppeteer_list_browsers',
+    browserParamsSchema.omit({}).optional(),
+    async () => {
+      return await listBrowsers();
+    },
+    { description: 'List all browser instances currently running' }
+  ),
+  
+  closeBrowser: new Tool(
+    'puppeteer_close_browser',
+    browserParamsSchema,
+    async (params) => {
+      return await closeBrowser(params);
+    },
+    { description: 'Close a browser instance' }
+  )
+};
+
+/**
+ * Tab management tools
+ */
+export const tabManagementTools = {
+  createTab: new Tool(
+    'puppeteer_create_tab',
+    tabParamsSchema,
+    async (params) => {
+      return await createTab(params);
+    },
+    { description: 'Create a new browser tab' }
+  ),
+  
+  listTabs: new Tool(
+    'puppeteer_list_tabs',
+    browserParamsSchema,
+    async (params) => {
+      return await listTabs(params);
+    },
+    { description: 'List all tabs in a browser instance' }
+  ),
+  
+  closeTab: new Tool(
+    'puppeteer_close_tab',
+    tabParamsSchema,
+    async (params) => {
+      return await closeTab(params);
+    },
+    { description: 'Close a browser tab' }
+  )
+};
 
 /**
  * Navigation tools
@@ -29,6 +109,15 @@ export const navigationTools = {
       return await navigate(params);
     },
     { description: 'Navigate to a URL' }
+  ),
+  
+  wait: new Tool(
+    'puppeteer_wait',
+    waitParamsSchema,
+    async (params) => {
+      return await wait(params);
+    },
+    { description: 'Wait for elements, navigation, or time periods' }
   )
 };
 
@@ -47,9 +136,9 @@ export const screenshotTools = {
 };
 
 /**
- * Interaction tools
+ * Mouse interaction tools
  */
-export const interactionTools = {
+export const mouseTools = {
   click: new Tool(
     'puppeteer_click',
     clickParamsSchema,
@@ -59,6 +148,43 @@ export const interactionTools = {
     { description: 'Click an element on the page' }
   ),
   
+  hover: new Tool(
+    'puppeteer_hover',
+    hoverParamsSchema,
+    async (params) => {
+      return await hover(params);
+    },
+    { description: 'Hover an element on the page' }
+  ),
+  
+  mouse: new Tool(
+    'puppeteer_mouse',
+    mouseParamsSchema,
+    async (params) => {
+      return await mouse(params);
+    },
+    { description: 'Control mouse position and buttons directly' }
+  )
+};
+
+/**
+ * Keyboard interaction tools
+ */
+export const keyboardTools = {
+  keyboard: new Tool(
+    'puppeteer_keyboard',
+    keyboardParamsSchema,
+    async (params) => {
+      return await keyboard(params);
+    },
+    { description: 'Control keyboard actions (press, type, etc.)' }
+  )
+};
+
+/**
+ * Form interaction tools
+ */
+export const formTools = {
   fill: new Tool(
     'puppeteer_fill',
     fillParamsSchema,
@@ -75,15 +201,20 @@ export const interactionTools = {
       return await select(params);
     },
     { description: 'Select an element on the page with Select tag' }
-  ),
-  
-  hover: new Tool(
-    'puppeteer_hover',
-    hoverParamsSchema,
+  )
+};
+
+/**
+ * Cookie management tools
+ */
+export const cookieTools = {
+  cookies: new Tool(
+    'puppeteer_cookies',
+    cookieParamsSchema,
     async (params) => {
-      return await hover(params);
+      return await cookies(params);
     },
-    { description: 'Hover an element on the page' }
+    { description: 'Manage browser cookies (get, set, delete, clear)' }
   )
 };
 
@@ -105,8 +236,13 @@ export const scriptingTools = {
  * All Puppeteer tools
  */
 export const allTools = [
+  ...Object.values(browserManagementTools),
+  ...Object.values(tabManagementTools),
   ...Object.values(navigationTools),
   ...Object.values(screenshotTools),
-  ...Object.values(interactionTools),
+  ...Object.values(mouseTools),
+  ...Object.values(keyboardTools),
+  ...Object.values(formTools),
+  ...Object.values(cookieTools),
   ...Object.values(scriptingTools)
 ];

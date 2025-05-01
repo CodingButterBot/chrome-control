@@ -12,8 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function runEnhancedTest() {
   console.log('🧪 Starting Enhanced MCP Server Test');
   
-  // Launch the MCP server as a child process (using the binary path directly)
-  const serverProcess = spawn('node', ['bin/chrome-mcp.js'], {
+  // Launch the MCP server as a child process (using index.js not chrome-mcp.js)
+  const serverProcess = spawn('node', ['bin/index.js'], {
     cwd: __dirname,
     env: {
       ...process.env,
@@ -88,10 +88,10 @@ async function runEnhancedTest() {
     const createBrowserRequest = {
       jsonrpc: '2.0',
       id: '1',
-      method: 'execute',
+      method: 'tools.call',
       params: {
-        tool: 'puppeteer_create_browser',
-        params: {
+        name: 'puppeteer_create_browser',
+        arguments: {
           launchOptions: {
             headless: true
           }
@@ -101,6 +101,9 @@ async function runEnhancedTest() {
     
     // Send the request to the server
     serverProcess.stdin.write(JSON.stringify(createBrowserRequest) + '\n');
+    
+    // Also print what we're sending for debugging
+    console.log('Request sent:', JSON.stringify(createBrowserRequest, null, 2));
     
     // Wait for response
     console.log('⏳ Waiting for create browser response...');
@@ -142,10 +145,10 @@ async function runEnhancedTest() {
     const navigateRequest = {
       jsonrpc: '2.0',
       id: '2',
-      method: 'execute',
+      method: 'tools.call',
       params: {
-        tool: 'puppeteer_navigate',
-        params: {
+        name: 'puppeteer_navigate',
+        arguments: {
           url: 'https://www.google.com',
           browserId: browserId
         }
@@ -181,10 +184,10 @@ async function runEnhancedTest() {
       const screenshotRequest = {
         jsonrpc: '2.0',
         id: '3',
-        method: 'execute',
+        method: 'tools.call',
         params: {
-          tool: 'puppeteer_screenshot',
-          params: {
+          name: 'puppeteer_screenshot',
+          arguments: {
             name: 'google-test',
             browserId: browserId
           }
@@ -230,10 +233,10 @@ async function runEnhancedTest() {
       const closeBrowserRequest = {
         jsonrpc: '2.0',
         id: '4',
-        method: 'execute',
+        method: 'tools.call',
         params: {
-          tool: 'puppeteer_close_browser',
-          params: {
+          name: 'puppeteer_close_browser',
+          arguments: {
             browserId: browserId
           }
         }

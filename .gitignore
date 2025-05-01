@@ -41,3 +41,5 @@ pids
 .DS_Store
 Thumbs.db
 EOL < /dev/null
+
+**/.claude/settings.local.json
