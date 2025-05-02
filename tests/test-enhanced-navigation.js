@@ -14,7 +14,7 @@ async function testEnhancedNavigation() {
   console.log('🧪 Testing Enhanced Navigation with Custom Response Format');
   
   // Launch the MCP server as a child process
-  const serverProcess = spawn('node', ['bin/index.js'], {
+  const serverProcess = spawn('node', ['../bin/index.js'], {
     cwd: __dirname,
     env: {
       ...process.env,
@@ -85,10 +85,10 @@ async function testEnhancedNavigation() {
       id: '1',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_create_browser',
+        name: 'chrome_create_browser',
         arguments: {
           launchOptions: {
-            headless: true
+            headless: false
           }
         }
       }
@@ -132,7 +132,7 @@ async function testEnhancedNavigation() {
       id: '2',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_navigate',
+        name: 'chrome_navigate',
         arguments: {
           url: testUrl,
           browserId: browserId,
@@ -211,7 +211,7 @@ async function testEnhancedNavigation() {
       id: '3',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_close_browser',
+        name: 'chrome_close_browser',
         arguments: {
           browserId: browserId
         }
