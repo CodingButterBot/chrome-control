@@ -16,14 +16,36 @@ export interface ToolParameters {
 }
 
 /**
+ * Standard response format for all Chrome tools
+ */
+export interface ChromeToolResponse {
+  // Browser and tab context information
+  context: {
+    browserId: string;
+    browser: {
+      id: string;
+      pagesCount: number;
+      createdAt: string;
+      lastUsed: string;
+    };
+    tabId: string | null;
+    tab: {
+      id: string;
+      url: string;
+      title: string;
+    } | null;
+  };
+  // Tool-specific response content
+  content: Array<{ type: string; text: string | { src: string; alt: string } }>;
+}
+
+/**
  * Custom Tool interface
  */
 export interface CustomTool {
   description: string;
   parameters: ToolParameters;
-  execute: (params: Record<string, unknown>) => Promise<{
-    content: Array<{ type: string; text: string }>;
-  }>;
+  execute: (params: Record<string, unknown>) => Promise<ChromeToolResponse>;
 }
 
 /**

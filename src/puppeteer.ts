@@ -12,184 +12,286 @@ import {
   KeyboardParams,
   MouseParams,
   WaitParams,
-  CookieParams
+  CookieParams,
+  ChromeToolResponse
 } from './types/puppeteer.js';
 import { browserManager, COMMAND_TIMEOUT, DEFAULT_LAUNCH_OPTIONS } from './browser-manager.js';
 
 /**
+ * Helper function to get consistent context information for all tool responses
+ * @param browserId Browser ID if known
+ * @param tabId Tab ID if known
+ * @returns Context object with browser and tab information
+ */
+async function getContextInfo(browserId?: string, tabId?: string): Promise<ChromeToolResponse['context']> {
+  try {
+    // Get browser info
+    const id = browserId || await browserManager.getDefaultBrowserId();
+    const browsers = browserManager.listBrowsers();
+    const browser = browsers.find(b => b.id === id) || browsers[0];
+    
+    if (!browser) {
+      throw new Error('No browser found');
+    }
+    
+    // Default context with browser info
+    const context: ChromeToolResponse['context'] = {
+      browserId: browser.id,
+      browser: {
+        id: browser.id,
+        pagesCount: browser.pagesCount,
+        createdAt: browser.createdAt.toISOString(),
+        lastUsed: browser.lastUsed.toISOString()
+      },
+      tabId: null,
+      tab: null
+    };
+    
+    // If tabId is provided or we can get one, add tab info
+    if (tabId || id) {
+      try {
+        // Get tab info
+        const pages = await browserManager.listPages(id);
+        const targetTab = tabId 
+          ? pages.find(p => p.id === tabId) 
+          : (pages.length > 0 ? pages[0] : null);
+        
+        if (targetTab) {
+          context.tabId = targetTab.id;
+          context.tab = {
+            id: targetTab.id,
+            url: targetTab.url,
+            title: targetTab.title
+          };
+        }
+      } catch (error) {
+        console.error('Error getting tab information:', error);
+        // Continue with browser-only context
+      }
+    }
+    
+    return context;
+  } catch (error) {
+    console.error('Error getting context information:', error);
+    // Return minimal context to avoid breaking the response
+    return {
+      browserId: browserId || 'unknown',
+      browser: {
+        id: browserId || 'unknown',
+        pagesCount: 0,
+        createdAt: new Date().toISOString(),
+        lastUsed: new Date().toISOString()
+      },
+      tabId: tabId || null,
+      tab: null
+    };
+  }
+}
+
+/**
+ * Creates a standardized response object with context information
+ * @param content The tool-specific content
+ * @param browserId Browser ID if known
+ * @param tabId Tab ID if known
+ * @returns Standardized response with context
+ */
+async function createResponse(
+  content: ChromeToolResponse['content'], 
+  browserId?: string, 
+  tabId?: string
+): Promise<ChromeToolResponse> {
+  const context = await getContextInfo(browserId, tabId);
+  return { context, content };
+}
+
+/**
  * Browser management commands
  */
-export async function createBrowser(params: BrowserParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function createBrowser(params: BrowserParams): Promise<ChromeToolResponse> {
   try {
     // Create a new browser instance with options if provided
     const browserId = await browserManager.launchBrowser(
       params.launchOptions ? { ...DEFAULT_LAUNCH_OPTIONS, ...params.launchOptions } : undefined
     );
     
-    return {
-      content: [
-        { type: 'text', text: `Browser launched successfully` },
-        { type: 'text', text: `Browser ID: ${browserId}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Browser launched successfully` },
+      { type: 'text', text: `Browser ID: ${browserId}` }
+    ];
+    
+    // Create standardized response with context
+    return await createResponse(content, browserId);
   } catch (error) {
     console.error('Error creating browser:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error creating browser:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error creating browser:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    // Even for errors, provide context if possible
+    return await createResponse(content);
   }
 }
 
-export async function listBrowsers(): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function listBrowsers(): Promise<ChromeToolResponse> {
   try {
     const browsers = browserManager.listBrowsers();
     
-    return {
-      content: [
-        { type: 'text', text: `Available browsers: ${browsers.length}` },
-        ...browsers.map(browser => ({ 
-          type: 'text', 
-          text: `ID: ${browser.id}, Pages: ${browser.pagesCount}, Created: ${browser.createdAt.toISOString()}, Last used: ${browser.lastUsed.toISOString()}` 
-        }))
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Available browsers: ${browsers.length}` },
+      ...browsers.map(browser => ({ 
+        type: 'text', 
+        text: `ID: ${browser.id}, Pages: ${browser.pagesCount}, Created: ${browser.createdAt.toISOString()}, Last used: ${browser.lastUsed.toISOString()}` 
+      }))
+    ];
+    
+    // Use the first browser for context if available
+    const browserId = browsers.length > 0 ? browsers[0].id : undefined;
+    return await createResponse(content, browserId);
   } catch (error) {
     console.error('Error listing browsers:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error listing browsers:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error listing browsers:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content);
   }
 }
 
-export async function closeBrowser(params: BrowserParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function closeBrowser(params: BrowserParams): Promise<ChromeToolResponse> {
   try {
+    // Store context information before closing the browser
+    const context = await getContextInfo(params.browserId);
+    
     const result = await browserManager.closeBrowser(params.browserId);
     
-    return {
-      content: [
-        { type: 'text', text: result 
-          ? `Browser closed successfully` 
-          : `Browser not found or already closed` 
-        }
-      ]
-    };
+    const content = [
+      { type: 'text', text: result 
+        ? `Browser closed successfully` 
+        : `Browser not found or already closed` 
+      }
+    ];
+    
+    // Create response with stored context since browser may be gone
+    return { context, content };
   } catch (error) {
     console.error('Error closing browser:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error closing browser:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error closing browser:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content);
   }
 }
 
 /**
  * Tab management commands
  */
-export async function createTab(params: TabParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function createTab(params: TabParams): Promise<ChromeToolResponse> {
   try {
     const { browserId, pageId } = await browserManager.createPage(params.browserId);
     
-    return {
-      content: [
-        { type: 'text', text: `New tab created` },
-        { type: 'text', text: `Browser ID: ${browserId}, Tab ID: ${pageId}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `New tab created` },
+      { type: 'text', text: `Browser ID: ${browserId}, Tab ID: ${pageId}` }
+    ];
+    
+    // If URL is provided, navigate to it
+    if (params.url) {
+      try {
+        const { page } = await browserManager.getPage(pageId, browserId);
+        await page.goto(params.url, { waitUntil: 'networkidle2' });
+        content.push({ type: 'text', text: `Navigated to ${params.url}` });
+      } catch (navError) {
+        console.error('Error navigating to URL in new tab:', navError);
+        content.push({ type: 'text', text: `Error navigating to URL: ${(navError as Error).message}` });
+      }
+    }
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error creating tab:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error creating tab:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error creating tab:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId);
   }
 }
 
-export async function listTabs(params: BrowserParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function listTabs(params: BrowserParams): Promise<ChromeToolResponse> {
   try {
     const pages = await browserManager.listPages(params.browserId);
     
-    return {
-      content: [
-        { type: 'text', text: `Available tabs: ${pages.length}` },
-        ...pages.map(page => ({ 
-          type: 'text', 
-          text: `ID: ${page.id}, URL: ${page.url}, Title: ${page.title}` 
-        }))
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Available tabs: ${pages.length}` },
+      ...pages.map(page => ({ 
+        type: 'text', 
+        text: `ID: ${page.id}, URL: ${page.url}, Title: ${page.title}` 
+      }))
+    ];
+    
+    // Use the first tab for context if available
+    const tabId = pages.length > 0 ? pages[0].id : undefined;
+    return await createResponse(content, params.browserId, tabId);
   } catch (error) {
     console.error('Error listing tabs:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error listing tabs:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error listing tabs:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId);
   }
 }
 
-export async function closeTab(params: TabParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function closeTab(params: TabParams): Promise<ChromeToolResponse> {
   if (!params.tabId) {
-    return {
-      content: [
-        { type: 'text', text: 'Error: Tab ID is required' }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error: Tab ID is required' }
+    ];
+    return await createResponse(content, params.browserId);
   }
   
   try {
+    // Store context information before closing the tab
+    const context = await getContextInfo(params.browserId, params.tabId);
+    
     const result = await browserManager.closePage(params.tabId, params.browserId);
     
-    return {
-      content: [
-        { type: 'text', text: result 
-          ? `Tab closed successfully` 
-          : `Tab not found or already closed` 
-        }
-      ]
+    const content = [
+      { type: 'text', text: result 
+        ? `Tab closed successfully` 
+        : `Tab not found or already closed` 
+      }
+    ];
+    
+    // Create response with stored context since tab may be gone
+    return { 
+      context, 
+      content 
     };
   } catch (error) {
     console.error('Error closing tab:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error closing tab:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error closing tab:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId);
   }
 }
 
 /**
  * Navigation commands
  */
-export async function navigate(params: NavigateParams): Promise<{
-  content: Array<{ type: string; text: string | { src: string; alt: string } }>;
-}> {
+export async function navigate(params: NavigateParams): Promise<ChromeToolResponse> {
   try {
     // Get page
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.log(`Navigating to: ${params.url}`);
     await page.goto(params.url, { 
@@ -482,36 +584,34 @@ export async function navigate(params: NavigateParams): Promise<{
       }
     }
     
-    return { content };
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error navigating:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error navigating to URL:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error navigating to URL:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * Wait for behaviors
  */
-export async function wait(params: WaitParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function wait(params: WaitParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     const timeout = params.timeout || COMMAND_TIMEOUT;
+    
+    let content: Array<{ type: string; text: string }>;
     
     if (params.selector) {
       console.log(`Waiting for selector: ${params.selector}`);
       await page.waitForSelector(params.selector, { timeout });
-      return {
-        content: [
-          { type: 'text', text: `Successfully waited for selector: ${params.selector}` }
-        ]
-      };
+      content = [
+        { type: 'text', text: `Successfully waited for selector: ${params.selector}` }
+      ];
     } 
     else if (params.xpath) {
       console.log(`Waiting for XPath: ${params.xpath}`);
@@ -523,64 +623,55 @@ export async function wait(params: WaitParams): Promise<{
         return result.singleNodeValue !== null;
       }, { timeout }, params.xpath);
       
-      return {
-        content: [
-          { type: 'text', text: `Successfully waited for XPath: ${params.xpath}` }
-        ]
-      };
+      content = [
+        { type: 'text', text: `Successfully waited for XPath: ${params.xpath}` }
+      ];
     }
     else if (params.function) {
       console.log(`Waiting for function to evaluate to true`);
       await page.waitForFunction(params.function, { timeout });
-      return {
-        content: [
-          { type: 'text', text: `Successfully waited for function to evaluate to true` }
-        ]
-      };
+      content = [
+        { type: 'text', text: `Successfully waited for function to evaluate to true` }
+      ];
     }
     else if (params.navigation) {
       console.log(`Waiting for navigation to complete`);
       await page.waitForNavigation({ waitUntil: params.waitUntil || 'networkidle2', timeout });
-      return {
-        content: [
-          { type: 'text', text: `Successfully waited for navigation to complete` }
-        ]
-      };
+      content = [
+        { type: 'text', text: `Successfully waited for navigation to complete` }
+      ];
     }
     else if (params.time) {
       console.log(`Waiting for ${params.time}ms`);
       await new Promise(resolve => setTimeout(resolve, params.time));
-      return {
-        content: [
-          { type: 'text', text: `Successfully waited for ${params.time}ms` }
-        ]
-      };
+      content = [
+        { type: 'text', text: `Successfully waited for ${params.time}ms` }
+      ];
+    }
+    else {
+      content = [
+        { type: 'text', text: `Error: No wait condition specified` }
+      ];
     }
     
-    return {
-      content: [
-        { type: 'text', text: `Error: No wait condition specified` }
-      ]
-    };
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error waiting:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error waiting:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error waiting:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * Taking screenshots
  */
-export async function screenshot(params: ScreenshotParams): Promise<{
-  content: Array<{ type: string; text: string | { src: string; alt: string } }>;
-}> {
+export async function screenshot(params: ScreenshotParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     // Adjust viewport if dimensions provided
     if (params.width || params.height) {
@@ -609,37 +700,35 @@ export async function screenshot(params: ScreenshotParams): Promise<{
     // Convert to base64 for inline display
     const base64Image = screenshotBuffer.toString('base64');
     
-    return {
-      content: [
-        { type: 'text', text: `Screenshot ${params.name} captured` },
-        { 
-          type: 'text', 
-          text: { 
-            src: `data:image/png;base64,${base64Image}`,
-            alt: params.name || 'Screenshot'
-          }
+    const content = [
+      { type: 'text', text: `Screenshot ${params.name} captured` },
+      { 
+        type: 'text', 
+        text: { 
+          src: `data:image/png;base64,${base64Image}`,
+          alt: params.name || 'Screenshot'
         }
-      ]
-    };
+      }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error taking screenshot:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error taking screenshot:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error taking screenshot:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * Mouse interactions
  */
-export async function click(params: ClickParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function click(params: ClickParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.log(`Clicking element: ${params.selector}`);
     
@@ -653,27 +742,25 @@ export async function click(params: ClickParams): Promise<{
       await page.click(params.selector);
     }
     
-    return {
-      content: [
-        { type: 'text', text: `Successfully clicked element: ${params.selector}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Successfully clicked element: ${params.selector}` }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error clicking element:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error clicking element:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error clicking element:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
-export async function hover(params: HoverParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function hover(params: HoverParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.log(`Hovering over element: ${params.selector}`);
     
@@ -683,27 +770,25 @@ export async function hover(params: HoverParams): Promise<{
     // Hover over the element
     await page.hover(params.selector);
     
-    return {
-      content: [
-        { type: 'text', text: `Successfully hovered over ${params.selector}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Successfully hovered over ${params.selector}` }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error hovering over element:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error hovering over element:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error hovering over element:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
-export async function mouse(params: MouseParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function mouse(params: MouseParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     // Get mouse object
     const mouse = page.mouse;
@@ -736,30 +821,28 @@ export async function mouse(params: MouseParams): Promise<{
         throw new Error(`Unsupported mouse action: ${params.action}`);
     }
     
-    return {
-      content: [
-        { type: 'text', text: `Successfully performed mouse ${params.action}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Successfully performed mouse ${params.action}` }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error performing mouse action:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error performing mouse action:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error performing mouse action:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * Keyboard interactions
  */
-export async function keyboard(params: KeyboardParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function keyboard(params: KeyboardParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     // Get keyboard object
     const keyboard = page.keyboard;
@@ -798,30 +881,28 @@ export async function keyboard(params: KeyboardParams): Promise<{
         throw new Error(`Unsupported keyboard action: ${params.action}`);
     }
     
-    return {
-      content: [
-        { type: 'text', text: `Successfully performed keyboard ${params.action}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Successfully performed keyboard ${params.action}` }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error performing keyboard action:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error performing keyboard action:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error performing keyboard action:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * Form interactions
  */
-export async function fill(params: FillParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function fill(params: FillParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.log(`Filling form field: ${params.selector} with value (length: ${params.value.length})`);
     
@@ -834,27 +915,25 @@ export async function fill(params: FillParams): Promise<{
     // Type the new value
     await page.type(params.selector, params.value);
     
-    return {
-      content: [
-        { type: 'text', text: `Successfully filled ${params.selector} with the provided value` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Successfully filled ${params.selector} with the provided value` }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error filling form field:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error filling form field:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error filling form field:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
-export async function select(params: SelectParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function select(params: SelectParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.log(`Selecting option '${params.value}' from: ${params.selector}`);
     
@@ -864,41 +943,40 @@ export async function select(params: SelectParams): Promise<{
     // Select the option
     await page.select(params.selector, params.value);
     
-    return {
-      content: [
-        { type: 'text', text: `Successfully selected ${params.value} from ${params.selector}` }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Successfully selected ${params.value} from ${params.selector}` }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error selecting option:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error selecting option:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error selecting option:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * Cookie management
  */
-export async function cookies(params: CookieParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function cookies(params: CookieParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
+    
+    let content: Array<{ type: string; text: string }>;
     
     switch (params.action) {
       case 'get': {
         console.log(`Getting cookies for current page`);
         const cookies = await page.cookies();
-        return {
-          content: [
-            { type: 'text', text: `Cookies retrieved: ${cookies.length}` },
-            { type: 'text', text: JSON.stringify(cookies, null, 2) }
-          ]
-        };
+        content = [
+          { type: 'text', text: `Cookies retrieved: ${cookies.length}` },
+          { type: 'text', text: JSON.stringify(cookies, null, 2) }
+        ];
+        break;
       }
         
       case 'set':
@@ -907,11 +985,10 @@ export async function cookies(params: CookieParams): Promise<{
         }
         console.log(`Setting cookie: ${params.cookie.name}`);
         await page.setCookie(params.cookie);
-        return {
-          content: [
-            { type: 'text', text: `Successfully set cookie: ${params.cookie.name}` }
-          ]
-        };
+        content = [
+          { type: 'text', text: `Successfully set cookie: ${params.cookie.name}` }
+        ];
+        break;
         
       case 'delete':
         if (!params.names || params.names.length === 0) {
@@ -923,45 +1000,43 @@ export async function cookies(params: CookieParams): Promise<{
           await page.deleteCookie({ name });
         }
         
-        return {
-          content: [
-            { type: 'text', text: `Successfully deleted cookies: ${params.names.join(', ')}` }
-          ]
-        };
+        content = [
+          { type: 'text', text: `Successfully deleted cookies: ${params.names.join(', ')}` }
+        ];
+        break;
         
       case 'clear': {
         console.log(`Clearing all cookies`);
         const allCookies = await page.cookies();
         await page.deleteCookie(...allCookies);
-        return {
-          content: [
-            { type: 'text', text: `Successfully cleared ${allCookies.length} cookies` }
-          ]
-        };
+        content = [
+          { type: 'text', text: `Successfully cleared ${allCookies.length} cookies` }
+        ];
+        break;
       }
         
       default:
         throw new Error(`Unsupported cookie action: ${params.action}`);
     }
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error managing cookies:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error managing cookies:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error managing cookies:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
 /**
  * JavaScript evaluation
  */
-export async function evaluate(params: EvaluateParams): Promise<{
-  content: Array<{ type: string; text: string }>;
-}> {
+export async function evaluate(params: EvaluateParams): Promise<ChromeToolResponse> {
   try {
-    const { page } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
     
     console.log(`Evaluating JavaScript: ${params.script.substring(0, 50)}...`);
     
@@ -973,20 +1048,20 @@ export async function evaluate(params: EvaluateParams): Promise<{
       ? JSON.stringify(result, null, 2) 
       : String(result);
     
-    return {
-      content: [
-        { type: 'text', text: `Script evaluation result:` },
-        { type: 'text', text: resultString }
-      ]
-    };
+    const content = [
+      { type: 'text', text: `Script evaluation result:` },
+      { type: 'text', text: resultString }
+    ];
+    
+    return await createResponse(content, browserId, pageId);
   } catch (error) {
     console.error('Error evaluating JavaScript:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error evaluating JavaScript:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error evaluating JavaScript:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 
@@ -1013,9 +1088,7 @@ export async function checkPuppeteer(): Promise<boolean> {
 /**
  * Action chaining for multiple operations
  */
-export async function chain(params: any): Promise<{
-  content: Array<{ type: string; text: string | { src: string; alt: string } }>;
-}> {
+export async function chain(params: any): Promise<ChromeToolResponse> {
   try {
     // Initialize response content
     const content: Array<{ type: string; text: string | { src: string; alt: string } }> = [
@@ -1027,6 +1100,10 @@ export async function chain(params: any): Promise<{
     
     // Store action results for conditional execution
     const actionResults: Array<{ success: boolean, result: any }> = [];
+    
+    // Track the latest browser and tab IDs through the chain execution
+    let currentBrowserId = browserId;
+    let currentTabId = pageId;
     
     // Execute each action in sequence
     for (let i = 0; i < params.actions.length; i++) {
@@ -1062,8 +1139,8 @@ export async function chain(params: any): Promise<{
       // Add browser and tab IDs to params if not specified
       const actionParams = {
         ...action.params,
-        browserId: action.params.browserId || browserId,
-        tabId: action.params.tabId || pageId
+        browserId: action.params.browserId || currentBrowserId,
+        tabId: action.params.tabId || currentTabId
       };
       
       let result;
@@ -1112,6 +1189,12 @@ export async function chain(params: any): Promise<{
             break;
         }
         
+        // Update current browser and tab IDs from the result context
+        if (result && result.context) {
+          currentBrowserId = result.context.browserId;
+          currentTabId = result.context.tabId || currentTabId;
+        }
+        
         // Add action result to content
         if (result && result.content) {
           content.push({ 
@@ -1154,15 +1237,16 @@ export async function chain(params: any): Promise<{
     
     content.push({ type: 'text', text: 'Chain execution completed' });
     
-    return { content };
+    // Return the final response with the most up-to-date browser and tab IDs
+    return await createResponse(content, currentBrowserId, currentTabId);
   } catch (error) {
     console.error('Error in action chain:', error);
-    return {
-      content: [
-        { type: 'text', text: 'Error in action chain:' },
-        { type: 'text', text: (error as Error)?.message || String(error) }
-      ]
-    };
+    const content = [
+      { type: 'text', text: 'Error in action chain:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content, params.browserId, params.tabId);
   }
 }
 

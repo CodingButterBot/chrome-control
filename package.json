@@ -1,6 +1,6 @@
 {
   "name": "mcp-chrome-control",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Browser automation for AI assistants - Chrome control via JSON-RPC and MCP",
   "main": "bin/index.js",
   "type": "module",

@@ -72,3 +72,4 @@ tests/user-data-dir/
 !docs/images/*.png
 !docs/images/*.jpg
 !docs/images/*.svg
+**/.claude/settings.local.json
