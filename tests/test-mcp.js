@@ -13,7 +13,7 @@ async function runTest() {
   console.log('🧪 Starting MCP Server Test');
   
   // Launch the MCP server as a child process
-  const serverProcess = spawn('node', ['bin/index.js'], {
+  const serverProcess = spawn('node', ['../bin/index.js'], {
     cwd: __dirname,
     env: {
       ...process.env,
@@ -60,7 +60,7 @@ async function runTest() {
       id: '1',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_navigate',
+        name: 'chrome_navigate',
         arguments: {
           url: 'https://www.google.com'
         }

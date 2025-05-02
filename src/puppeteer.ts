@@ -1,4 +1,4 @@
-import { Page, KeyInput } from 'puppeteer';
+import { KeyInput } from 'puppeteer';
 import { 
   NavigateParams, 
   ScreenshotParams, 
@@ -890,7 +890,7 @@ export async function cookies(params: CookieParams): Promise<{
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
     switch (params.action) {
-      case 'get':
+      case 'get': {
         console.log(`Getting cookies for current page`);
         const cookies = await page.cookies();
         return {
@@ -899,6 +899,7 @@ export async function cookies(params: CookieParams): Promise<{
             { type: 'text', text: JSON.stringify(cookies, null, 2) }
           ]
         };
+      }
         
       case 'set':
         if (!params.cookie) {
@@ -928,7 +929,7 @@ export async function cookies(params: CookieParams): Promise<{
           ]
         };
         
-      case 'clear':
+      case 'clear': {
         console.log(`Clearing all cookies`);
         const allCookies = await page.cookies();
         await page.deleteCookie(...allCookies);
@@ -937,6 +938,7 @@ export async function cookies(params: CookieParams): Promise<{
             { type: 'text', text: `Successfully cleared ${allCookies.length} cookies` }
           ]
         };
+      }
         
       default:
         throw new Error(`Unsupported cookie action: ${params.action}`);
@@ -1021,7 +1023,7 @@ export async function chain(params: any): Promise<{
     ];
     
     // Get page
-    const { page, browserId, pageId } = await browserManager.getPage(params.tabId, params.browserId);
+    const { browserId, pageId } = await browserManager.getPage(params.tabId, params.browserId);
     
     // Store action results for conditional execution
     const actionResults: Array<{ success: boolean, result: any }> = [];

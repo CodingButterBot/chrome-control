@@ -399,7 +399,7 @@ async function testActionChaining() {
       id: '6',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_close_browser',
+        name: 'chrome_close_browser',
         arguments: {
           browserId: browserId
         }

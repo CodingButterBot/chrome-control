@@ -93,7 +93,7 @@ export class PuppeteerMcpServer extends BaseMcpServer {
     
     // Initialize the handlers to enable tools.list and tools.call methods
     try {
-      // @ts-ignore - Using private method
+      // @ts-expect-error - Using private method from MCP SDK
       this.setToolRequestHandlers();
       console.error('✅ Tool handlers initialized successfully');
     } catch (error) {

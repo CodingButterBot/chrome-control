@@ -1,4 +1,5 @@
-import puppeteerBase from 'puppeteer';
+// This import is required to ensure type definitions
+import 'puppeteer';
 import puppeteerExtra from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import UAPlugin from 'puppeteer-extra-plugin-anonymize-ua';
@@ -6,9 +7,9 @@ import { Browser, Page } from 'puppeteer';
 import { v4 as uuidv4 } from 'uuid';
 
 // Add stealth plugins
-// @ts-ignore - typing issue with puppeteer-extra
+// @ts-expect-error - typing issue with puppeteer-extra
 puppeteerExtra.use(StealthPlugin());
-// @ts-ignore - typing issue with puppeteer-extra
+// @ts-expect-error - typing issue with puppeteer-extra
 puppeteerExtra.use(UAPlugin({ makeWindows: true }));
 
 // Default browser launch options
@@ -76,7 +77,7 @@ export class BrowserManager {
       console.error('Launching browser with options:', JSON.stringify(options));
       
       // Launch browser with puppeteer-extra and stealth features
-      // @ts-ignore - typing issue with puppeteer-extra
+      // @ts-expect-error - typing issue with puppeteer-extra
       const browser = await puppeteerExtra.launch({
         ...DEFAULT_LAUNCH_OPTIONS,
         ...options,
@@ -384,10 +385,10 @@ export class BrowserManager {
       // Override timezone
       Object.defineProperty(Intl, 'DateTimeFormat', {
         get: function() {
-          // @ts-ignore
-          return function(...args: any[]) {
+          const constructor = function(...args: any[]) {
             return new Intl.DateTimeFormat(...args);
           };
+          return constructor;
         }
       });
       
@@ -410,8 +411,8 @@ export class BrowserManager {
       });
       
       // Override device memory
-      // @ts-ignore
-      Object.defineProperty(navigator, 'deviceMemory', {
+      // Override deviceMemory
+      Object.defineProperty(navigator, 'deviceMemory' as any, {
         get: () => 8
       });
       
@@ -426,8 +427,8 @@ export class BrowserManager {
         if (parameter === 37446) {
           return 'Intel Iris OpenGL Engine';
         }
-        // @ts-ignore
-        return getParameter.apply(this, [parameter]);
+        // Call the original method
+        return getParameter.call(this, parameter);
       };
     });
     
