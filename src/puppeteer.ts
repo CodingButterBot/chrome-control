@@ -191,7 +191,7 @@ export async function navigate(params: NavigateParams): Promise<{
     // Get page
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Navigating to: ${params.url}`);
+    console.log(`Navigating to: ${params.url}`);
     await page.goto(params.url, { 
       waitUntil: params.waitUntil || 'networkidle2', 
       timeout: params.timeout || COMMAND_TIMEOUT 
@@ -214,7 +214,7 @@ export async function navigate(params: NavigateParams): Promise<{
       
       // Include screenshot if requested
       if (format.screenshot) {
-        console.error('Taking screenshot as part of navigation response');
+        console.log('Taking screenshot as part of navigation response');
         const screenshotOptions: any = {};
         if (format.fullPage) {
           screenshotOptions.fullPage = true;
@@ -234,14 +234,14 @@ export async function navigate(params: NavigateParams): Promise<{
       
       // Include page text if requested
       if (format.pageText) {
-        console.error('Extracting page text');
+        console.log('Extracting page text');
         const pageText = await page.evaluate(() => document.body.innerText);
         content.push({ type: 'text', text: `Page text: ${pageText}` });
       }
       
       // Extract elements if requested
       if (format.elements && format.elements.selector) {
-        console.error(`Extracting elements matching selector: ${format.elements.selector}`);
+        console.log(`Extracting elements matching selector: ${format.elements.selector}`);
         const elementsData = await page.evaluate((selector, options) => {
           const elements = Array.from(document.querySelectorAll(selector));
           let filteredElements = elements;
@@ -251,29 +251,29 @@ export async function navigate(params: NavigateParams): Promise<{
             const filter = options.filter;
             
             // Filter by element type
-            if (filter.includeElements && filter.includeElements.length > 0) {
+            if (filter.includeElements && Array.isArray(filter.includeElements) && filter.includeElements.length > 0) {
               filteredElements = filteredElements.filter(el => 
-                filter.includeElements.includes(el.tagName.toLowerCase())
+                filter.includeElements!.includes(el.tagName.toLowerCase())
               );
             }
             
-            if (filter.excludeElements && filter.excludeElements.length > 0) {
+            if (filter.excludeElements && Array.isArray(filter.excludeElements) && filter.excludeElements.length > 0) {
               filteredElements = filteredElements.filter(el => 
-                !filter.excludeElements.includes(el.tagName.toLowerCase())
+                !filter.excludeElements!.includes(el.tagName.toLowerCase())
               );
             }
             
             // Filter by text content
-            if (filter.textFilter) {
+            if (filter.textFilter && typeof filter.textFilter === 'string') {
               filteredElements = filteredElements.filter(el => 
-                (el as HTMLElement).innerText.includes(filter.textFilter)
+                (el as HTMLElement).innerText.includes(filter.textFilter as string)
               );
             }
             
             // Filter by attribute values
-            if (filter.attributeFilter && filter.attributeFilter.length > 0) {
+            if (filter.attributeFilter && Array.isArray(filter.attributeFilter) && filter.attributeFilter.length > 0) {
               filteredElements = filteredElements.filter(el => {
-                return filter.attributeFilter.some(attrFilter => {
+                return filter.attributeFilter!.some(attrFilter => {
                   const attrValue = (el as HTMLElement).getAttribute(attrFilter.name);
                   if (!attrValue) return false;
                   
@@ -309,7 +309,7 @@ export async function navigate(params: NavigateParams): Promise<{
               let text = (el as HTMLElement).innerText;
               
               // Limit text length if specified in filter
-              if (options.filter && options.filter.maxTextLength && text.length > options.filter.maxTextLength) {
+              if (options.filter && options.filter.maxTextLength && typeof options.filter.maxTextLength === 'number' && text.length > options.filter.maxTextLength) {
                 text = text.substring(0, options.filter.maxTextLength) + '...';
               }
               
@@ -336,7 +336,7 @@ export async function navigate(params: NavigateParams): Promise<{
       
       // Include links if requested
       if (format.links) {
-        console.error('Extracting links from page');
+        console.log('Extracting links from page');
         const links = await page.evaluate((filter) => {
           let allLinks = Array.from(document.querySelectorAll('a')).map(a => ({
             href: a.href,
@@ -348,16 +348,16 @@ export async function navigate(params: NavigateParams): Promise<{
           // Apply filtering if specified
           if (filter) {
             // Filter by text content
-            if (filter.textFilter) {
+            if (filter.textFilter && typeof filter.textFilter === 'string') {
               allLinks = allLinks.filter(link => 
-                link.text.includes(filter.textFilter)
+                link.text.includes(filter.textFilter as string)
               );
             }
             
             // Filter by attribute values (href is treated as a special case for links)
-            if (filter.attributeFilter && filter.attributeFilter.length > 0) {
+            if (filter.attributeFilter && Array.isArray(filter.attributeFilter) && filter.attributeFilter.length > 0) {
               allLinks = allLinks.filter(link => {
-                return filter.attributeFilter.some(attrFilter => {
+                return filter.attributeFilter && filter.attributeFilter.some(attrFilter => {
                   if (attrFilter.name === 'href') {
                     return attrFilter.partial 
                       ? link.href.includes(attrFilter.value)
@@ -376,9 +376,9 @@ export async function navigate(params: NavigateParams): Promise<{
             }
             
             // Limit text length if specified
-            if (filter.maxTextLength) {
+            if (filter.maxTextLength && typeof filter.maxTextLength === 'number') {
               allLinks = allLinks.map(link => {
-                if (link.text.length > filter.maxTextLength) {
+                if (link.text.length > filter.maxTextLength!) {
                   return {
                     ...link,
                     text: link.text.substring(0, filter.maxTextLength) + '...'
@@ -403,7 +403,7 @@ export async function navigate(params: NavigateParams): Promise<{
       
       // Include inputs if requested
       if (format.inputs) {
-        console.error('Extracting input fields from page');
+        console.log('Extracting input fields from page');
         const inputs = await page.evaluate((filter) => {
           let allInputs = Array.from(document.querySelectorAll('input, textarea, select')).map(input => {
             const element = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -422,22 +422,22 @@ export async function navigate(params: NavigateParams): Promise<{
           // Apply filtering if specified
           if (filter) {
             // Filter by element type (input, textarea, select)
-            if (filter.includeElements && filter.includeElements.length > 0) {
+            if (filter.includeElements && Array.isArray(filter.includeElements) && filter.includeElements.length > 0) {
               allInputs = allInputs.filter(input => 
-                filter.includeElements.includes(input.type)
+                filter.includeElements!.includes(input.type)
               );
             }
             
-            if (filter.excludeElements && filter.excludeElements.length > 0) {
+            if (filter.excludeElements && Array.isArray(filter.excludeElements) && filter.excludeElements.length > 0) {
               allInputs = allInputs.filter(input => 
-                !filter.excludeElements.includes(input.type)
+                !filter.excludeElements!.includes(input.type)
               );
             }
             
             // Filter by attribute values
-            if (filter.attributeFilter && filter.attributeFilter.length > 0) {
+            if (filter.attributeFilter && Array.isArray(filter.attributeFilter) && filter.attributeFilter.length > 0) {
               allInputs = allInputs.filter(input => {
-                return filter.attributeFilter.some(attrFilter => {
+                return filter.attributeFilter!.some(attrFilter => {
                   // Special cases for common input attributes
                   if (attrFilter.name === 'id' && input.id) {
                     return attrFilter.partial 
@@ -505,7 +505,7 @@ export async function wait(params: WaitParams): Promise<{
     const timeout = params.timeout || COMMAND_TIMEOUT;
     
     if (params.selector) {
-      console.error(`Waiting for selector: ${params.selector}`);
+      console.log(`Waiting for selector: ${params.selector}`);
       await page.waitForSelector(params.selector, { timeout });
       return {
         content: [
@@ -514,7 +514,7 @@ export async function wait(params: WaitParams): Promise<{
       };
     } 
     else if (params.xpath) {
-      console.error(`Waiting for XPath: ${params.xpath}`);
+      console.log(`Waiting for XPath: ${params.xpath}`);
       // Using evaluate as a workaround since waitForXPath is deprecated
       await page.waitForFunction((xpath) => {
         const result = document.evaluate(
@@ -530,7 +530,7 @@ export async function wait(params: WaitParams): Promise<{
       };
     }
     else if (params.function) {
-      console.error(`Waiting for function to evaluate to true`);
+      console.log(`Waiting for function to evaluate to true`);
       await page.waitForFunction(params.function, { timeout });
       return {
         content: [
@@ -539,7 +539,7 @@ export async function wait(params: WaitParams): Promise<{
       };
     }
     else if (params.navigation) {
-      console.error(`Waiting for navigation to complete`);
+      console.log(`Waiting for navigation to complete`);
       await page.waitForNavigation({ waitUntil: params.waitUntil || 'networkidle2', timeout });
       return {
         content: [
@@ -548,7 +548,7 @@ export async function wait(params: WaitParams): Promise<{
       };
     }
     else if (params.time) {
-      console.error(`Waiting for ${params.time}ms`);
+      console.log(`Waiting for ${params.time}ms`);
       await new Promise(resolve => setTimeout(resolve, params.time));
       return {
         content: [
@@ -593,7 +593,7 @@ export async function screenshot(params: ScreenshotParams): Promise<{
     // Take screenshot of specific element or full page
     let screenshotBuffer: Buffer;
     if (params.selector) {
-      console.error(`Taking screenshot of element: ${params.selector}`);
+      console.log(`Taking screenshot of element: ${params.selector}`);
       const element = await page.$(params.selector);
       if (!element) {
         throw new Error(`Element not found: ${params.selector}`);
@@ -601,7 +601,7 @@ export async function screenshot(params: ScreenshotParams): Promise<{
       const elementScreenshot = await element.screenshot();
       screenshotBuffer = Buffer.from(elementScreenshot);
     } else {
-      console.error('Taking full page screenshot');
+      console.log('Taking full page screenshot');
       const pageScreenshot = await page.screenshot({ fullPage: params.fullPage });
       screenshotBuffer = Buffer.from(pageScreenshot);
     }
@@ -641,7 +641,7 @@ export async function click(params: ClickParams): Promise<{
   try {
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Clicking element: ${params.selector}`);
+    console.log(`Clicking element: ${params.selector}`);
     
     // Wait for the element to appear
     await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
@@ -675,7 +675,7 @@ export async function hover(params: HoverParams): Promise<{
   try {
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Hovering over element: ${params.selector}`);
+    console.log(`Hovering over element: ${params.selector}`);
     
     // Wait for the element to appear
     await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
@@ -714,22 +714,22 @@ export async function mouse(params: MouseParams): Promise<{
         if (typeof params.x !== 'number' || typeof params.y !== 'number') {
           throw new Error('X and Y coordinates are required for mouse move action');
         }
-        console.error(`Moving mouse to coordinates: ${params.x}, ${params.y}`);
+        console.log(`Moving mouse to coordinates: ${params.x}, ${params.y}`);
         await mouse.move(params.x, params.y);
         break;
       case 'down':
-        console.error(`Pressing mouse button: ${params.button || 'left'}`);
+        console.log(`Pressing mouse button: ${params.button || 'left'}`);
         await mouse.down({ button: (params.button || 'left') as any });
         break;
       case 'up':
-        console.error(`Releasing mouse button: ${params.button || 'left'}`);
+        console.log(`Releasing mouse button: ${params.button || 'left'}`);
         await mouse.up({ button: (params.button || 'left') as any });
         break;
       case 'click':
         if (typeof params.x !== 'number' || typeof params.y !== 'number') {
           throw new Error('X and Y coordinates are required for mouse click action');
         }
-        console.error(`Clicking at coordinates: ${params.x}, ${params.y}`);
+        console.log(`Clicking at coordinates: ${params.x}, ${params.y}`);
         await mouse.click(params.x, params.y, { button: (params.button || 'left') as any });
         break;
       default:
@@ -770,28 +770,28 @@ export async function keyboard(params: KeyboardParams): Promise<{
         if (!params.text) {
           throw new Error('Text parameter is required for keyboard type action');
         }
-        console.error(`Typing text: ${params.text.substring(0, 20)}${params.text.length > 20 ? '...' : ''}`);
+        console.log(`Typing text: ${params.text.substring(0, 20)}${params.text.length > 20 ? '...' : ''}`);
         await keyboard.type(params.text, { delay: params.delay || undefined });
         break;
       case 'press':
         if (!params.key) {
           throw new Error('Key parameter is required for keyboard press action');
         }
-        console.error(`Pressing key: ${params.key}`);
+        console.log(`Pressing key: ${params.key}`);
         await keyboard.press(params.key as KeyInput, { delay: params.delay || undefined });
         break;
       case 'down':
         if (!params.key) {
           throw new Error('Key parameter is required for keyboard down action');
         }
-        console.error(`Holding down key: ${params.key}`);
+        console.log(`Holding down key: ${params.key}`);
         await keyboard.down(params.key as KeyInput);
         break;
       case 'up':
         if (!params.key) {
           throw new Error('Key parameter is required for keyboard up action');
         }
-        console.error(`Releasing key: ${params.key}`);
+        console.log(`Releasing key: ${params.key}`);
         await keyboard.up(params.key as KeyInput);
         break;
       default:
@@ -823,7 +823,7 @@ export async function fill(params: FillParams): Promise<{
   try {
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Filling form field: ${params.selector} with value (length: ${params.value.length})`);
+    console.log(`Filling form field: ${params.selector} with value (length: ${params.value.length})`);
     
     // Wait for the element to appear
     await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
@@ -856,7 +856,7 @@ export async function select(params: SelectParams): Promise<{
   try {
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Selecting option '${params.value}' from: ${params.selector}`);
+    console.log(`Selecting option '${params.value}' from: ${params.selector}`);
     
     // Wait for the element to appear
     await page.waitForSelector(params.selector, { timeout: COMMAND_TIMEOUT });
@@ -891,7 +891,7 @@ export async function cookies(params: CookieParams): Promise<{
     
     switch (params.action) {
       case 'get':
-        console.error(`Getting cookies for current page`);
+        console.log(`Getting cookies for current page`);
         const cookies = await page.cookies();
         return {
           content: [
@@ -904,7 +904,7 @@ export async function cookies(params: CookieParams): Promise<{
         if (!params.cookie) {
           throw new Error('Cookie object is required for set action');
         }
-        console.error(`Setting cookie: ${params.cookie.name}`);
+        console.log(`Setting cookie: ${params.cookie.name}`);
         await page.setCookie(params.cookie);
         return {
           content: [
@@ -916,7 +916,7 @@ export async function cookies(params: CookieParams): Promise<{
         if (!params.names || params.names.length === 0) {
           throw new Error('Cookie names array is required for delete action');
         }
-        console.error(`Deleting cookies: ${params.names.join(', ')}`);
+        console.log(`Deleting cookies: ${params.names.join(', ')}`);
         
         for (const name of params.names) {
           await page.deleteCookie({ name });
@@ -929,7 +929,7 @@ export async function cookies(params: CookieParams): Promise<{
         };
         
       case 'clear':
-        console.error(`Clearing all cookies`);
+        console.log(`Clearing all cookies`);
         const allCookies = await page.cookies();
         await page.deleteCookie(...allCookies);
         return {
@@ -961,7 +961,7 @@ export async function evaluate(params: EvaluateParams): Promise<{
   try {
     const { page } = await browserManager.getPage(params.tabId, params.browserId);
     
-    console.error(`Evaluating JavaScript: ${params.script.substring(0, 50)}...`);
+    console.log(`Evaluating JavaScript: ${params.script.substring(0, 50)}...`);
     
     // Execute the script in browser context
     const result = await page.evaluate(params.script);
@@ -1011,7 +1011,7 @@ export async function checkPuppeteer(): Promise<boolean> {
 /**
  * Action chaining for multiple operations
  */
-export async function chain(params: ChainParams): Promise<{
+export async function chain(params: any): Promise<{
   content: Array<{ type: string; text: string | { src: string; alt: string } }>;
 }> {
   try {
@@ -1029,7 +1029,7 @@ export async function chain(params: ChainParams): Promise<{
     // Execute each action in sequence
     for (let i = 0; i < params.actions.length; i++) {
       const action = params.actions[i];
-      console.error(`Executing chain action ${i + 1}/${params.actions.length}: ${action.type}`);
+      console.log(`Executing chain action ${i + 1}/${params.actions.length}: ${action.type}`);
       
       // Check condition for execution if specified
       if (action.condition) {
@@ -1037,7 +1037,7 @@ export async function chain(params: ChainParams): Promise<{
         
         // Ensure the previous action index is valid
         if (previousAction < 0 || previousAction >= i) {
-          console.error(`Invalid previous action index: ${previousAction}`);
+          console.log(`Invalid previous action index: ${previousAction}`);
           content.push({ type: 'text', text: `Skipping action ${i + 1} due to invalid condition reference` });
           actionResults.push({ success: false, result: null });
           continue;
@@ -1050,7 +1050,7 @@ export async function chain(params: ChainParams): Promise<{
           (expectedStatus === 'error' && !prevResult.success);
         
         if (!shouldExecute) {
-          console.error(`Condition not met, skipping action ${i + 1}`);
+          console.log(`Condition not met, skipping action ${i + 1}`);
           content.push({ type: 'text', text: `Skipping action ${i + 1} because condition was not met` });
           actionResults.push({ success: false, result: null });
           continue;
@@ -1104,7 +1104,7 @@ export async function chain(params: ChainParams): Promise<{
             result = await cookies(actionParams as CookieParams);
             break;
           default:
-            console.error(`Unsupported action type: ${action.type}`);
+            console.log(`Unsupported action type: ${action.type}`);
             content.push({ type: 'text', text: `Error: Unsupported action type '${action.type}'` });
             success = false;
             break;

@@ -53,6 +53,7 @@ async function testActionChaining() {
         }, 10000);
         
         rl.on('line', (line) => {
+          console.log(`STDOUT: ${line}`);
           if (line.includes('MCP Server running') || line.includes('Chrome Control MCP Server running')) {
             clearTimeout(timeout);
             console.log('✅ Server started successfully');
@@ -87,7 +88,7 @@ async function testActionChaining() {
         name: 'puppeteer_create_browser',
         arguments: {
           launchOptions: {
-            headless: true
+            headless: "new"
           }
         }
       }
