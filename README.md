@@ -119,16 +119,38 @@ async function runDemo() {
 
 ## Core Tools
 
+Chrome Control offers a comprehensive set of tools to automate browser interactions, organized in a modular, maintainable structure. Each tool is encapsulated in its own directory with implementations and tests.
+
 | Category | Tools |
 |----------|-------|
-| **Browser Management** | Create, list, close browsers, connect to existing browsers, use user profiles |
-| **Navigation** | Navigate to URLs with custom response formats |
-| **Interaction** | Click, hover, fill forms, select options |
-| **Mouse & Keyboard** | Direct control of mouse and keyboard actions |
+| **Browser Management** | Create, list, close browsers, connect to existing browsers, detect existing browsers, launch with user profiles, list user profiles |
+| **Tab Management** | Create, list, close tabs |
+| **Navigation** | Navigate to URLs with custom response formats, wait for various conditions |
+| **Interaction** | Click, hover, fill forms, select options, submit forms |
+| **Mouse & Keyboard** | Direct control of mouse position and buttons, keyboard press/type/down/up |
 | **Screenshots** | Take full-page or element-specific screenshots |
 | **JavaScript** | Execute custom JavaScript in browser context |
+| **Cookies** | Get, set, delete, clear browser cookies |
+| **Action Chaining** | Execute multiple actions in sequence with conditional logic |
 
-[View the complete tool reference →](https://github.com/CodingButterBot/chrome-control.wiki/Tools-Reference)
+### Modular Tool Structure
+
+Each tool is organized in a dedicated directory with implementations and tests:
+
+```
+src/tools/
+├── browser-create/            # Create browser tool
+│   ├── index.ts               # Main implementation
+│   └── createBrowser.__TEST__.ts  # Co-located tests
+├── mouse-click/               # Click elements tool
+│   ├── index.ts               
+│   └── clickElement.__TEST__.ts
+...
+```
+
+This structure provides focused organization, clear ownership, and isolated testing, making the codebase more maintainable and extensible.
+
+[View the complete tool reference →](https://github.com/CodingButterBot/chrome-control/blob/main/src/tools/README.md)
 
 ## Use Cases
 

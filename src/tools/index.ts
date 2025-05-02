@@ -9,32 +9,70 @@ import { McpServer } from '../mcp-server.js';
 import { Tool } from '../types/tool.js';
 
 // Import all tools from their individual folders
+// Browser management tools
 import { createBrowserTool } from './browser-create/index.js';
 import { listBrowsersTool } from './browser-list/index.js';
 import { closeBrowserTool } from './browser-close/index.js';
+import { connectBrowserTool } from './browser-connect/index.js';
+import { profileBrowserTool } from './browser-profile/index.js';
+import { detectBrowsersTool } from './browser-detect/index.js';
+import { profilesListTool } from './browser-profiles/index.js';
+
+// Tab management tools
 import { createTabTool } from './tab-create/index.js';
+import { listTabsTool } from './tab-list/index.js';
+import { closeTabTool } from './tab-close/index.js';
+
+// Navigation tools
 import { navigateTool } from './navigation-navigate/index.js';
+import { waitTool } from './navigation-wait/index.js';
+
+// Screenshot tools
 import { screenshotTool } from './screenshot/index.js';
+
+// Mouse interaction tools
 import { clickTool } from './mouse-click/index.js';
-import { keyboardTool } from './keyboard-type/index.js';
+import { hoverTool } from './mouse-hover/index.js';
+import { mouseControlTool } from './mouse-control/index.js';
+
+// Keyboard tools
+import { keyboardTool } from './keyboard/index.js';
+
+// Form interaction tools
+import { fillTool } from './form-fill/index.js';
+import { selectTool } from './form-select/index.js';
 import { formSubmitTool } from './form-submit/index.js';
+
+// Cookie management tools
 import { cookieTool } from './cookie-manage/index.js';
+
+// JavaScript evaluation tools
+import { evaluateTool } from './script-evaluate/index.js';
 import { scriptExecuteTool } from './script-execute/index.js';
+
+// Action chaining tools
 import { chainActionsTool } from './chain-actions/index.js';
 
 // Group tools by category for organization
 const browserTools = [
   createBrowserTool,
   listBrowsersTool,
-  closeBrowserTool
+  closeBrowserTool,
+  connectBrowserTool,
+  profileBrowserTool,
+  detectBrowsersTool,
+  profilesListTool
 ];
 
 const tabTools = [
-  createTabTool
+  createTabTool,
+  listTabsTool,
+  closeTabTool
 ];
 
 const navigationTools = [
-  navigateTool
+  navigateTool,
+  waitTool
 ];
 
 const screenshotTools = [
@@ -42,7 +80,9 @@ const screenshotTools = [
 ];
 
 const mouseTools = [
-  clickTool
+  clickTool,
+  hoverTool,
+  mouseControlTool
 ];
 
 const keyboardTools = [
@@ -50,6 +90,8 @@ const keyboardTools = [
 ];
 
 const formTools = [
+  fillTool,
+  selectTool,
   formSubmitTool
 ];
 
@@ -58,6 +100,7 @@ const cookieTools = [
 ];
 
 const scriptTools = [
+  evaluateTool,
   scriptExecuteTool
 ];
 

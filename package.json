@@ -37,6 +37,7 @@
     "test:llm-simulation": "node tests/llm-simulation-test.js",
     "test:mock-llm": "node tests/mock-llm-test.js",
     "test:basic-llm": "node tests/basic-llm-sim.js",
+    "test:tools": "mocha --require ts-node/register src/tools/**/*.__TEST__.ts",
     "test": "npm run test:zod && npm run test:basic-llm",
     "test:all": "npm run test:zod && npm run test:basic-llm",
     "precommit": "npm run build && npm run test:all",
@@ -71,6 +72,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
+    "@types/chai": "^5.2.1",
+    "@types/mocha": "^10.0.10",
+    "chai": "^5.2.0",
     "node-fetch": "^3.3.2",
     "puppeteer": "^24.7.2",
     "puppeteer-extra": "^3.3.6",
@@ -85,7 +89,9 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
+    "mocha": "^11.2.2",
     "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
     "typedoc": "^0.28.3",
     "typedoc-plugin-markdown": "^4.6.3",
     "typescript": "^5.8.3"

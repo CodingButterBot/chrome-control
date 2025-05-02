@@ -13,7 +13,7 @@
  *   node run-mcp-call.js chrome_navigate '{"tabId":"123","url":"https://example.com"}' # Legacy mode
  */
 
-import { allTools } from '../bin/tools.js';
+import { allTools } from '../bin/tools/index.js';
 import fs from 'fs';
 import path from 'path';
 

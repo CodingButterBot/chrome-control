@@ -178,7 +178,8 @@ export async function connectToExistingChromeInstance(port: number): Promise<Bro
     });
     
     logger.info(`Successfully connected to Chrome on port ${port}`);
-    return browser;
+    // The casts are needed because puppeteer-core and puppeteer have slightly different Browser types
+  return browser as any;
   } catch (error) {
     logger.exception(error, `Failed to connect to Chrome on port ${port}`);
     throw new Error(`Failed to connect to Chrome on port ${port}: ${(error as Error).message}`);
@@ -403,5 +404,6 @@ export async function launchWithProfile(
     defaultViewport: null
   });
   
-  return { browser, port };
+  // The casts are needed because puppeteer-core and puppeteer have slightly different Browser types
+  return { browser: browser as any, port };
 }

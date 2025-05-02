@@ -11,7 +11,7 @@ import AnonymizeUAPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 import { v4 as uuidv4 } from 'uuid';
 import { McpServer } from '../../bin/mcp-server.js';
 import { createTool } from '../../bin/mcp-server.js';
-import { allTools } from '../../bin/tools.js';
+import { allTools } from '../../bin/tools/index.js';
 import { z } from 'zod';
 
 // Apply plugins to enhance Puppeteer behavior (stealth mode)

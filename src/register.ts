@@ -142,6 +142,11 @@ export const keyboardParamsSchema = basePuppeteerParamsSchema.extend({
   delay: z.number().positive().optional().describe('Delay between keystrokes in milliseconds')
 });
 
+export const keyboardTypeParamsSchema = basePuppeteerParamsSchema.extend({
+  text: z.string().describe('Text to type'),
+  delay: z.number().positive().optional().describe('Delay between keystrokes in milliseconds')
+});
+
 /**
  * Form action schemas
  */
@@ -207,6 +212,15 @@ export const chainActionSchema = z.object({
 
 export const chainParamsSchema = basePuppeteerParamsSchema.extend({
   actions: z.array(chainActionSchema).min(1).describe('Array of actions to execute in sequence'),
+  stopOnError: z.boolean().optional().describe('Whether to stop if an action fails (default: true)')
+});
+
+export const chainActionsParamsSchema = basePuppeteerParamsSchema.extend({
+  actions: z.array(z.object({
+    action: z.string().describe('Action to perform (e.g., "create_tab", "wait", "fill", "click")'),
+    // Other action parameters are defined as a record of any type
+    // to allow flexibility in the action parameters
+  }).and(z.record(z.any()))).min(1).describe('Array of actions to execute in sequence'),
   stopOnError: z.boolean().optional().describe('Whether to stop if an action fails (default: true)')
 });
 
