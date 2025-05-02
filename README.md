@@ -243,13 +243,19 @@ npm run dev
 npm run test:all
 
 # Run individual test suites
-npm run test:browser       # Test browser launching
-npm run test:mcp           # Test MCP server functionality
-npm run test:enhanced      # Test enhanced MCP interactions
-npm run test:navigation    # Test enhanced navigation
+npm run test:browser            # Test browser launching
+npm run test:mcp                # Test MCP server functionality
+npm run test:enhanced           # Test enhanced MCP interactions
+npm run test:navigation         # Test enhanced navigation
+npm run test:filtering          # Test DOM filtering functionality
+npm run test:chaining           # Test action chaining
+npm run test:multi-navigation   # Test multi-site navigation
+npm run test:interactions       # Test interactive element testing
+npm run test:advanced-filtering # Test advanced DOM filtering
+npm run test:advanced-chaining  # Test enhanced action chaining
 
 # Run examples
-npm run example:puppies    # DuckDuckGo search example
+npm run example:puppies         # DuckDuckGo search example
 ```
 
 ### Adding New Browser Control Features
