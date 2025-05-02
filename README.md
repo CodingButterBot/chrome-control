@@ -16,6 +16,7 @@ This Model Context Protocol (MCP) server provides Chrome browser control, enabli
 - [Available Tools](#-available-tools)
 - [LLM Integration](#-llm-integration)
 - [Enhanced Navigation](#-enhanced-navigation)
+- [User Profiles & Persistence](#-user-profiles--persistence)
 - [Project Structure](#-project-structure)
 - [Development](#-development)
 - [Troubleshooting](#-troubleshooting)
@@ -31,6 +32,7 @@ This Model Context Protocol (MCP) server provides Chrome browser control, enabli
 - **JavaScript Execution** - Run custom JavaScript in the browser
 - **Anti-Bot Protection** - Browser fingerprinting protection measures
 - **Element Selection** - Select elements by various attributes like placeholder, class, and id
+- **User Profiles** - Maintain persistent sessions for logging into websites and storing cookies
 - **Easy Setup** - Works with npx or global installation
 
 ## 🚀 Installation
@@ -197,6 +199,31 @@ The enhanced navigation feature allows specifying exactly what data to receive w
 
 For detailed information, see [Enhanced Navigation Documentation](docs/anti-bot-research.md).
 
+## 👤 User Profiles & Persistence
+
+Chrome Control supports user profiles to maintain persistence between sessions:
+
+```javascript
+// Create a browser with persistent profile
+{
+  "name": "chrome_create_browser",
+  "arguments": {
+    "launchOptions": {
+      "headless": false,
+      "userDataDir": "/path/to/user/data/directory"
+    }
+  }
+}
+```
+
+Key benefits:
+- **Session Persistence** - Stay logged into websites
+- **Cookie Management** - Maintain cookies between sessions
+- **History & Bookmarks** - Access browsing history and saved pages
+- **Form Data** - Remember form fields and autofill information
+
+For detailed information about using user profiles, see [User Profiles Documentation](docs/user-profiles.md).
+
 ## 📂 Project Structure
 
 ```
@@ -256,6 +283,7 @@ npm run test:advanced-chaining  # Test enhanced action chaining
 
 # Run examples
 npm run example:puppies         # DuckDuckGo search example
+npm run test:google-image       # Google image search with download
 ```
 
 ### Adding New Browser Control Features

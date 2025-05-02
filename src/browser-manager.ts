@@ -17,6 +17,9 @@ export const DEFAULT_LAUNCH_OPTIONS = {
   headless: false, // Use windowed mode
   defaultViewport: { width: 1280, height: 800 },
   executablePath: process.env.CHROME_PATH || undefined, // Allow custom Chrome path
+  // If userDataDir is not provided, each browser instance will be ephemeral
+  // The calling code can specify a userDataDir to maintain persistence
+  userDataDir: undefined, // Set this to enable persistence
   args: [
     '--no-sandbox', 
     '--disable-setuid-sandbox',
