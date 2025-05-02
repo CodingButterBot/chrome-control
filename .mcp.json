@@ -8,14 +8,6 @@
         "@modelcontextprotocol/server-memory"
       ]
     },
-    "coworker": {
-      "type": "stdio",
-      "command": "claude",
-      "args": [
-        "mcp",
-        "serve"
-      ]
-    },
     "smtp_gmail": {
       "type": "stdio",
       "command": "npx",
