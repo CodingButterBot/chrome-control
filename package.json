@@ -20,7 +20,8 @@
     "test:multi-navigation": "node tests/test-multi-navigation.js",
     "test:interactions": "node tests/test-interactions.js",
     "test:advanced-filtering": "node tests/test-advanced-filtering.js",
-    "test:all": "npm run test:browser && npm run test:mcp && npm run test:enhanced && npm run test:navigation && npm run test:filtering && npm run test:chaining && npm run test:multi-navigation && npm run test:interactions && npm run test:advanced-filtering",
+    "test:advanced-chaining": "node tests/test-advanced-chaining.js",
+    "test:all": "npm run test:browser && npm run test:mcp && npm run test:enhanced && npm run test:navigation && npm run test:filtering && npm run test:chaining && npm run test:multi-navigation && npm run test:interactions && npm run test:advanced-filtering && npm run test:advanced-chaining",
     "example:puppies": "node tests/examples/duckduckgo-puppies.js",
     "postinstall": "npm run build",
     "prepare": "npm run build"
