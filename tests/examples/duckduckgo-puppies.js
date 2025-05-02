@@ -1,4 +1,4 @@
-#\!/usr/bin/env node
+#!/usr/bin/env node
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,7 +14,7 @@ async function searchPuppies() {
   console.log('🐕 Starting DuckDuckGo Puppies Search Example');
   
   // Launch the MCP server
-  const serverProcess = spawn('node', ['bin/index.js'], {
+  const serverProcess = spawn('node', ['../../bin/index.js'], {
     cwd: __dirname,
     env: {
       ...process.env,
