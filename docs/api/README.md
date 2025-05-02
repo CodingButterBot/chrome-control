@@ -1,4 +1,4 @@
-**Chrome Control API Documentation v1.4.0**
+**Chrome Control API Documentation v1.5.0**
 
 ***
 
@@ -129,6 +129,10 @@ async function runDemo() {
 | **JavaScript** | Execute custom JavaScript in browser context |
 
 [View the complete tool reference →](https://github.com/CodingButterBot/chrome-control.wiki/Tools-Reference)
+
+## Implementation Notes
+
+- [Zod Schema Conversion](zod-conversion.md) - How Zod schemas are converted for MCP compatibility
 
 ## Use Cases
 

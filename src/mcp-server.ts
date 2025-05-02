@@ -165,11 +165,31 @@ export class McpServer {
     this.tools.push(tool);
     
     // Register with MCP SDK using any type to bypass type checking
+    // Convert Zod schema to rawZod object for MCP compatibility
+    // Use a safer method to convert schema to JSON
+    let rawSchema;
+    try {
+      // Check if schema has toJSON method
+      if (tool.schema && typeof tool.schema.toJSON === 'function') {
+        rawSchema = tool.schema.toJSON();
+      } else if (tool.schema && tool.schema._def) {
+        // Fallback for older Zod versions
+        rawSchema = JSON.parse(JSON.stringify(tool.schema));
+      } else {
+        // Last resort fallback
+        rawSchema = tool.schema;
+      }
+    } catch (error) {
+      console.error(`Failed to convert schema for tool ${tool.name}:`, error);
+      // Provide a minimal valid schema as fallback
+      rawSchema = { type: "object", properties: {} };
+    }
+    
     // @ts-ignore - There are type mismatches in the SDK, but this works at runtime
     this.sdkServer.tool(
       tool.name,
       JSON.stringify(tool.options),
-      tool.schema,
+      rawSchema,
       // @ts-ignore - There are type mismatches in the SDK, but this works at runtime
       async (args: any) => {
         // Execute the tool handler
@@ -303,6 +323,14 @@ export function createTool<T extends z.ZodTypeAny>(
     description: string;
   }
 ): Tool<T> {
+  // Validate that schema is a proper Zod schema
+  if (!schema || typeof schema !== 'object') {
+    console.error(`⚠️ Warning: Invalid schema for tool ${name}`);
+    // Create a minimal valid schema as fallback
+    schema = z.object({}) as any;
+  }
+  
+  // Note: schema is kept as the Zod object, conversion to rawZod happens in registerTool
   return {
     name,
     schema,

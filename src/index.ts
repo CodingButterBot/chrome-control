@@ -35,7 +35,7 @@ import { closeAllBrowsers } from './puppeteer.js';
 import { parseArgs } from 'node:util';
 
 // Package version from package.json
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 
 /**
  * Parse command line arguments

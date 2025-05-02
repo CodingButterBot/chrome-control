@@ -5,6 +5,18 @@ All notable changes to Chrome Control will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Critical error in Zod schema conversion causing "Cannot read properties of null (reading '_def')" in MCP server
+- Added robust error handling for schema conversion edge cases
+- Improved validation in tool creation and registration
+- Added enhanced testing for Zod schema conversion
+
+### Added
+- Comprehensive documentation about common Zod conversion issues and solutions
+- New error recovery mechanisms for invalid schemas
+
 ## [1.5.0] - 2025-05-02
 
 ### Added
@@ -15,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Detailed function documentation with examples and parameter descriptions
 - Documentation scripts in package.json (docs, docs:watch, docs:serve)
 
-## [Unreleased]
+## [1.4.0] - 2025-04-25
 
 ### Added
 - MCP testing utilities in scripts/run-mcp-call.js for direct tool testing

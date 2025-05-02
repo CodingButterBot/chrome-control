@@ -203,8 +203,19 @@ export const chainParamsSchema = basePuppeteerParamsSchema.extend({
 export function registerToolsList(server: McpServer, tools: Tool<any>[]): void {
   console.error(`Registering ${tools.length} tools...`);
   
-  // Register tools using the server's registerTools method
-  server.registerTools(tools);
+  // Check tools before registration
+  for (const tool of tools) {
+    if (!tool || !tool.schema) {
+      console.error(`⚠️ Warning: Invalid tool definition found: ${tool?.name || 'unnamed'}`);
+    }
+  }
   
-  console.error('All tools registered successfully');
+  try {
+    // Register tools using the server's registerTools method
+    server.registerTools(tools);
+    console.error('All tools registered successfully');
+  } catch (error) {
+    console.error('❌ Error registering tools:', error);
+    throw error;
+  }
 }

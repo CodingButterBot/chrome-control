@@ -112,6 +112,7 @@ async function runDemo() {
 - **JavaScript Execution**: Run custom JS in the browser context
 - **Context Persistence**: Automatic tracking of browser and tab information across calls
 - **Robust Error Handling**: Better error messages and recovery mechanisms
+- **Comprehensive Test Suite**: Extensive tests covering all functionality
 
 ## Core Tools
 
@@ -150,8 +151,17 @@ npm install
 # Start development server
 npm run dev
 
-# Run tests
+# Run all tests
 npm run test:all
+
+# Run unit tests with pretty formatting
+npm run test:units
+
+# Run specific test categories
+npm run test:nav          # Navigation tests
+npm run test:form         # Form interaction tests  
+npm run test:screenshot   # Screenshot and evaluation tests
+npm run test:zod          # Zod schema conversion tests
 
 # Test MCP tools directly with the MCP testing utility
 npm run mcp:add chrome_create_browser '{}'
@@ -186,6 +196,7 @@ See our [Contributing Guide](https://github.com/CodingButterBot/chrome-control/b
 - [Example Scripts](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
 - [API Reference](https://github.com/CodingButterBot/chrome-control.wiki/API-Reference)
 - [Context Persistence](https://github.com/CodingButterBot/chrome-control/blob/main/docs/context-persistence.md)
+- [Test Suite Documentation](https://github.com/CodingButterBot/chrome-control/blob/main/docs/testing.md)
 - [MCP Testing](https://github.com/CodingButterBot/chrome-control/wiki/tools/MCP-Testing)
 - [Changelog](https://github.com/CodingButterBot/chrome-control/blob/main/CHANGELOG.md)
 
