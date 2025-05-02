@@ -181,12 +181,48 @@ export const chainParamsSchema = basePuppeteerParamsSchema.extend({
  * @param tools Array of Tool instances
  */
 export function registerToolsList(server: PuppeteerMcpServer, tools: Tool<any>[]): void {
+  console.error(`Registering ${tools.length} tools...`);
+  
+  // Register tools using the server's addTool method
   tools.forEach(tool => {
-    server.addTool(
-      tool.name,
-      tool.schema,
-      tool.handler,
-      tool.options
-    );
+    try {
+      console.error(`Registering tool: ${tool.name}`);
+      server.addTool(
+        tool.name,
+        tool.schema,
+        tool.handler,
+        tool.options
+      );
+    } catch (error) {
+      console.error(`Error registering tool ${tool.name}:`, error);
+    }
   });
+  
+  // Additionally register tool methods directly for older SDK versions
+  try {
+    // Helper to access private transport property
+    function getServerTransport(srv: any): any {
+      return srv._transport || null;
+    }
+    
+    // Get the server's transport
+    const transport = getServerTransport(server);
+    
+    if (transport && typeof transport.handle === 'function') {
+      // Register direct tool access methods
+      tools.forEach(tool => {
+        try {
+          transport.handle(tool.name, async (params: any) => {
+            console.error(`Direct call to tool ${tool.name}`);
+            return await tool.handler(params || {});
+          });
+        } catch (error) {
+          console.error(`Error registering direct handler for ${tool.name}:`, error);
+        }
+      });
+      console.error('Direct tool methods registered');
+    }
+  } catch (error) {
+    console.error('Error registering direct tool methods:', error);
+  }
 }

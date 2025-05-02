@@ -9,99 +9,260 @@ import { pipeline } from 'stream/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const USER_DATA_DIR = path.join(__dirname, 'user-data-dir');
+const LOGS_DIR = path.join(__dirname, 'logs');
+
+// Ensure logs directory exists
+if (!fs.existsSync(LOGS_DIR)) {
+  fs.mkdirSync(LOGS_DIR, { recursive: true });
+}
+
+// Configure test logging
+const logFilePath = path.join(LOGS_DIR, `google-image-search-${new Date().toISOString().replace(/:/g, '-')}.log`);
+const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+
+// Log both to console and file
+function log(level, message) {
+  const timestamp = new Date().toISOString();
+  const formattedMessage = `[${timestamp}] [${level}] ${message}`;
+  
+  console.log(formattedMessage);
+  logStream.write(formattedMessage + '\n');
+}
+
+// Helper functions for different log levels
+const logger = {
+  info: (message) => log('INFO', message),
+  debug: (message) => log('DEBUG', message),
+  error: (message) => log('ERROR', message),
+  warn: (message) => log('WARN', message),
+  trace: (message) => log('TRACE', message),
+  
+  // Log an object as JSON
+  json: (label, obj) => {
+    try {
+      const json = JSON.stringify(obj, null, 2);
+      log('JSON', `${label}:\n${json}`);
+    } catch (error) {
+      log('ERROR', `Failed to stringify object ${label}: ${error.message}`);
+    }
+  },
+  
+  // Log an error with stack trace
+  exception: (error, prefix = '') => {
+    const message = prefix ? `${prefix}: ${error.message}` : error.message;
+    log('ERROR', message);
+    if (error.stack) {
+      log('ERROR', `Stack trace:\n${error.stack}`);
+    }
+  }
+};
 
 /**
  * Test Google Image search with persistence and downloading
+ * 
+ * This test demonstrates:
+ * 1. Browser launching in windowed mode
+ * 2. Google navigation and search
+ * 3. Image downloading
+ * 4. Comprehensive error handling and logging
  */
 async function testGoogleImageSearch() {
-  console.log('🖼️ Starting Google Image Search Test');
+  logger.info('🖼️ Starting Google Image Search Test');
+  logger.info(`Log file: ${logFilePath}`);
   
   // Create user data directory if it doesn't exist
   if (!fs.existsSync(USER_DATA_DIR)) {
     fs.mkdirSync(USER_DATA_DIR, { recursive: true });
+    logger.info(`Created Chrome profile directory: ${USER_DATA_DIR}`);
+  } else {
+    logger.info(`Using existing Chrome profile directory: ${USER_DATA_DIR}`);
   }
   
-  console.log(`Using Chrome profile directory: ${USER_DATA_DIR}`);
+  // Track timings for performance analysis
+  const startTime = process.hrtime();
+  const timings = {};
   
-  // Launch the MCP server as a child process
-  const serverProcess = spawn('node', ['../bin/index.js'], {
-    cwd: __dirname,
-    env: {
-      ...process.env,
-      CHROME_PATH: process.env.CHROME_PATH || '/usr/bin/google-chrome',
-      DEBUG: 'true' // Enable additional debugging
-    },
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  // Create a function to record step timings
+  const recordTiming = (step) => {
+    const [seconds, nanoseconds] = process.hrtime(startTime);
+    const milliseconds = seconds * 1000 + nanoseconds / 1000000;
+    timings[step] = Math.round(milliseconds);
+    logger.debug(`Step "${step}" completed at ${timings[step]}ms`);
+  };
   
-  // Create readline interfaces
-  const rl = readline.createInterface({
-    input: serverProcess.stdout,
-    terminal: false
-  });
+  // Track active timers
+  const activeTimers = {};
+  const startTimer = (name) => {
+    activeTimers[name] = process.hrtime();
+    return () => {
+      if (!activeTimers[name]) return;
+      const [seconds, nanoseconds] = process.hrtime(activeTimers[name]);
+      const duration = seconds * 1000 + nanoseconds / 1000000;
+      logger.debug(`⏱️ ${name} completed in ${duration.toFixed(2)}ms`);
+      delete activeTimers[name];
+    };
+  };
   
-  const errRl = readline.createInterface({
-    input: serverProcess.stderr,
-    terminal: false
-  });
-  
-  // Log server output
-  errRl.on('line', (line) => console.log(`SERVER LOG: ${line}`));
-  
-  // Wait for server to be ready
-  console.log('⏳ Waiting for server to start...');
-  await new Promise((resolve) => {
-    rl.on('line', (line) => {
-      if (line.includes('MCP Server running')) {
-        console.log('✅ Server started successfully');
-        resolve();
-      }
-    });
-  });
-  
-  // Wait a bit to make sure everything is initialized
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  let serverProcess;
+  let rl;
+  let errRl;
+  let browserId;
   
   try {
-    // Step 1: Create a browser with user data directory for persistence
-    console.log('Step 1: Creating browser with persistent profile...');
-    
-    const createBrowserRequest = {
-      jsonrpc: '2.0',
-      id: '1',
-      method: 'tools.call',
-      params: {
-        name: 'chrome_create_browser',
-        arguments: {
-          launchOptions: {
-            headless: false,
-            userDataDir: USER_DATA_DIR
-          }
-        }
-      }
-    };
-    
-    serverProcess.stdin.write(JSON.stringify(createBrowserRequest) + '\n');
-    
-    const browserResponse = await new Promise((resolve) => {
-      rl.once('line', (line) => {
-        try {
-          resolve(JSON.parse(line));
-        } catch (e) {
-          resolve({ error: 'Failed to parse response', raw: line });
-        }
-      });
-      
-      setTimeout(() => resolve({ error: 'Timeout waiting for response' }), 30000);
+    logger.info('Launching MCP server process');
+    // Launch the MCP server as a child process
+    serverProcess = spawn('node', ['../bin/index.js'], {
+      cwd: __dirname,
+      env: {
+        ...process.env,
+        CHROME_PATH: process.env.CHROME_PATH || '/usr/bin/google-chrome',
+        DEBUG: 'true', // Enable additional debugging
+        LOG_LEVEL: 'DEBUG', // Set logging level for our new logger
+        LOG_TO_FILE: 'true', // Enable file logging
+        LOG_FILE_PATH: path.join(LOGS_DIR, 'chrome-control-server.log') // Server log path
+      },
+      stdio: ['pipe', 'pipe', 'pipe']
     });
     
-    if (browserResponse.error) {
-      throw new Error(`Browser creation failed: ${JSON.stringify(browserResponse.error)}`);
+    // Handle process exit
+    serverProcess.on('exit', (code, signal) => {
+      logger.info(`Server process exited with code ${code} and signal ${signal}`);
+    });
+    
+    // Handle process errors
+    serverProcess.on('error', (error) => {
+      logger.exception(error, 'Server process error');
+    });
+    
+    // Create readline interfaces
+    rl = readline.createInterface({
+      input: serverProcess.stdout,
+      terminal: false
+    });
+    
+    errRl = readline.createInterface({
+      input: serverProcess.stderr,
+      terminal: false
+    });
+    
+    // Log server output with timestamps
+    errRl.on('line', (line) => {
+      logger.trace(`SERVER: ${line}`);
+    });
+    
+    // Wait for server to be ready with timeout
+    logger.info('⏳ Waiting for server to start...');
+    const serverStartTimer = startTimer('server_start');
+    
+    // The server outputs to stderr, so we need to listen for the startup message there
+    await Promise.race([
+      new Promise((resolve) => {
+        // Check if we've already seen the startup message in previous logs
+        errRl.on('line', (line) => {
+          logger.trace(`Looking for startup message in: ${line}`);
+          if (line.includes('MCP Server running')) {
+            serverStartTimer();
+            logger.info('✅ Server started successfully');
+            resolve();
+          }
+        });
+      }),
+      new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timed out waiting for server to start (15s)'));
+        }, 15000);
+      })
+    ]);
+    
+    // Wait a bit to make sure everything is initialized
+    logger.debug('Waiting for server initialization to complete');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    recordTiming('server_initialized');
+  
+    // Utility function to send JSON-RPC requests and handle responses with proper logging and timeout
+    async function sendRequest(method, params, requestId, timeoutMs = 30000) {
+      const requestTimer = startTimer(`request_${requestId}_${method}`);
+      
+      // Create the JSON-RPC request
+      const request = {
+        jsonrpc: '2.0',
+        id: requestId,
+        method: 'tools.call',
+        params: {
+          name: params.name,
+          arguments: params.arguments || {}
+        }
+      };
+      
+      // Log the request
+      logger.debug(`Sending request #${requestId}: ${method}`);
+      logger.json(`Request #${requestId}`, request);
+      
+      // Send the request
+      serverProcess.stdin.write(JSON.stringify(request) + '\n');
+      
+      // Wait for the response with timeout
+      try {
+        const response = await Promise.race([
+          new Promise((resolve) => {
+            rl.once('line', (line) => {
+              try {
+                const parsedResponse = JSON.parse(line);
+                logger.debug(`Received response for request #${requestId}`);
+                logger.json(`Response #${requestId}`, parsedResponse);
+                resolve(parsedResponse);
+              } catch (e) {
+                logger.error(`Failed to parse response for request #${requestId}: ${e.message}`);
+                logger.debug(`Raw response: ${line}`);
+                resolve({ error: { code: -32700, message: 'Parse error', data: line } });
+              }
+            });
+          }),
+          new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error(`Request #${requestId} timed out after ${timeoutMs}ms`));
+            }, timeoutMs);
+          })
+        ]);
+        
+        // Check for errors
+        if (response.error) {
+          const errorMsg = `Request #${requestId} failed: ${JSON.stringify(response.error)}`;
+          logger.error(errorMsg);
+          throw new Error(errorMsg);
+        }
+        
+        requestTimer();
+        return response;
+      } catch (error) {
+        logger.exception(error, `Request #${requestId} error`);
+        throw error;
+      }
     }
     
-    // Extract browser ID
-    const browserId = extractValueFromContent(browserResponse.result.content, 'Browser ID: ', 1);
-    console.log(`📝 Browser ID: ${browserId}`);
+    // Step 1: Create a browser with user data directory for persistence
+    logger.info('Step 1: Creating browser with persistent profile...');
+    const createBrowserTimer = startTimer('create_browser');
+    
+    const browserResponse = await sendRequest('tools.call', {
+      name: 'chrome_create_browser',
+      arguments: {
+        launchOptions: {
+          headless: false, // Ensure windowed mode
+          userDataDir: USER_DATA_DIR
+        }
+      }
+    }, '1', 60000); // Increase timeout for browser creation to 60s
+    
+    // Extract browser ID from the response
+    browserId = extractValueFromContent(browserResponse.result.content, 'Browser ID: ', 1);
+    if (!browserId) {
+      throw new Error('Failed to extract browser ID from response');
+    }
+    
+    logger.info(`📝 Browser ID: ${browserId}`);
+    createBrowserTimer();
+    recordTiming('browser_created');
     
     // Step 2: Navigate to Google
     console.log('Step 2: Navigating to Google...');
@@ -415,18 +576,102 @@ async function testGoogleImageSearch() {
       setTimeout(() => resolve({ error: 'Timeout waiting for response' }), 30000);
     });
     
-    console.log('🎉 Google Image Search test completed successfully!');
+    logger.info('🎉 Google Image Search test completed successfully!');
+    
+    // Log performance metrics
+    const [totalSeconds, totalNanoseconds] = process.hrtime(startTime);
+    const totalMilliseconds = totalSeconds * 1000 + totalNanoseconds / 1000000;
+    logger.info(`⏱️ Total test duration: ${totalMilliseconds.toFixed(2)}ms`);
+    
+    // Log all timings for analysis
+    logger.json('Test step timings', timings);
+    
+    return { success: true, browserId, timings };
     
   } catch (error) {
-    console.error('❌ Test failed with error:', error);
+    logger.error('❌ Test failed with error:');
+    logger.exception(error);
+    
+    // Try to take a screenshot of the current state if possible
+    if (browserId) {
+      try {
+        logger.info('Taking error state screenshot...');
+        const errorScreenshotResponse = await sendRequest('tools.call', {
+          name: 'chrome_screenshot',
+          arguments: {
+            browserId: browserId,
+            fullPage: true,
+            path: path.join(LOGS_DIR, 'error-screenshot.png')
+          }
+        }, 'error-screenshot', 10000);
+        
+        logger.info('Error screenshot saved to logs directory');
+      } catch (screenshotError) {
+        logger.error('Failed to capture error screenshot: ' + screenshotError.message);
+      }
+    }
+    
+    return { success: false, error: error.message };
   } finally {
-    // Clean up
-    console.log('🧹 Cleaning up...');
-    serverProcess.kill();
-    rl.close();
-    errRl.close();
-    console.log('🔒 Server process terminated');
+    // Clean up resources and close everything properly
+    logger.info('🧹 Cleaning up resources...');
+    
+    // Close the browser if it's still open
+    if (browserId) {
+      try {
+        logger.debug(`Closing browser ${browserId}...`);
+        await sendRequest('tools.call', {
+          name: 'chrome_close_browser',
+          arguments: { browserId }
+        }, 'cleanup', 10000).catch(e => logger.warn(`Error closing browser: ${e.message}`));
+      } catch (closeError) {
+        logger.warn(`Error during browser cleanup: ${closeError.message}`);
+      }
+    }
+    
+    // Close log file if it's not already closed
+    if (logStream && !logStream.closed) {
+      try {
+        logStream.end('\n--- Log End ---\n');
+      } catch (e) {
+        // Ignore errors if the stream is already closed
+      }
+    }
+    
+    // Terminate server process
+    if (serverProcess) {
+      logger.info('Terminating server process...');
+      serverProcess.kill();
+      
+      // Give it a moment to clean up
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Close readline interfaces
+    if (rl) rl.close();
+    if (errRl) errRl.close();
+    
+    logger.info('🔒 All resources cleaned up');
+    logger.info(`Full test log available at: ${logFilePath}`);
   }
+}
+
+// Utility to generate a test summary report
+function generateTestReport(result, logFilePath) {
+  const reportPath = path.join(path.dirname(logFilePath), 'test-report.json');
+  
+  const report = {
+    testName: 'Google Image Search Test',
+    timestamp: new Date().toISOString(),
+    duration: result.timings ? result.timings.browser_created : null,
+    success: result.success,
+    error: result.error,
+    logFile: logFilePath,
+    timings: result.timings
+  };
+  
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+  return reportPath;
 }
 
 /**
@@ -476,8 +721,26 @@ async function downloadImage(url, destination) {
   });
 }
 
-// Run the test
-testGoogleImageSearch().catch(error => {
-  console.error('Fatal error:', error);
+// Run the test and generate report
+testGoogleImageSearch().then(result => {
+  const reportPath = generateTestReport(result, logFilePath);
+  logger.info(`Test report saved to: ${reportPath}`);
+  
+  // Exit with appropriate code
+  process.exit(result.success ? 0 : 1);
+}).catch(error => {
+  logger.error('Fatal error during test execution:');
+  logger.exception(error);
+  
+  // Try to close log stream
+  try {
+    if (logStream) {
+      logStream.write(`\nFATAL ERROR: ${error.message}\n${error.stack || ''}\n`);
+      logStream.end('\n--- Log End With Fatal Error ---\n');
+    }
+  } catch (e) {
+    // Ignore errors during error handling
+  }
+  
   process.exit(1);
 });

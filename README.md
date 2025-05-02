@@ -1,76 +1,44 @@
-# Chrome Control MCP Server
+# Chrome Control
 
 <div align="center">
-  <img src="https://www.gstatic.com/devrel-devsite/prod/v8643e450526cbd1897c8ac9022a528a876b5447c24f357968cd79d75303e8beb/chrome/images/chrome-logo.svg" alt="Chrome Logo" width="100" height="100">
-  <p><em>Control Chrome browser directly from Claude and other AI assistants</em></p>
+  <img src="docs/images/chrome-control-logo.png" alt="Chrome Control Logo" width="200">
+  <h3>Browser Automation for AI Assistants</h3>
+  <p><em>Control Chrome directly through JSON-RPC and MCP for seamless AI-driven browser automation</em></p>
+
+  [![GitHub license](https://img.shields.io/github/license/CodingButterBot/chrome-control)](https://github.com/CodingButterBot/chrome-control/blob/main/LICENSE)
+  [![npm version](https://img.shields.io/npm/v/mcp-chrome-control.svg)](https://www.npmjs.com/package/mcp-chrome-control)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/CodingButterBot/chrome-control/blob/main/CONTRIBUTING.md)
+  [![Node version](https://img.shields.io/node/v/mcp-chrome-control.svg)](https://www.npmjs.com/package/mcp-chrome-control)
 </div>
 
-This Model Context Protocol (MCP) server provides Chrome browser control, enabling AI assistants to automate web browsing through standardized tools. Designed specifically for LLM-based assistants like Claude, it provides efficient browser control with minimal token usage. Powered by Puppeteer under the hood.
+## Overview
 
-## 📋 Table of Contents
+Chrome Control is a powerful browser automation server that enables AI assistants and applications to control Chrome through a JSON-RPC interface, with special support for the Model Context Protocol (MCP). Built on Puppeteer with enhanced features for AI integration, it allows AI systems to navigate websites, interact with elements, capture screenshots, and extract structured data.
 
-- [Features](#-features)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [Available Tools](#-available-tools)
-- [LLM Integration](#-llm-integration)
-- [Enhanced Navigation](#-enhanced-navigation)
-- [User Profiles & Persistence](#-user-profiles--persistence)
-- [Project Structure](#-project-structure)
-- [Development](#-development)
-- [Troubleshooting](#-troubleshooting)
-- [License](#-license)
+**Key Benefits:**
+- 🧠 **AI-Optimized**: Designed specifically for AI assistants like Claude, GPT, and Bard
+- 🛡️ **Bot-Detection Avoidance**: Stealth features to navigate modern websites without being blocked
+- 🚀 **Token Efficient**: Customizable responses to minimize token usage in AI contexts
+- 👁️ **Visual Feedback**: Option to run in windowed mode for users to see AI actions in real-time
+- 🔄 **Session Persistence**: Support for user profiles to maintain login sessions and cookies
 
-## ✨ Features
+[Website](https://CodingButterBot.github.io/chrome-control/) | [Documentation](https://github.com/CodingButterBot/chrome-control.wiki) | [Examples](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
 
-- **Full Browser Control** - Navigate, click, fill forms, and more from any MCP-compatible AI assistant
-- **Enhanced Navigation** - Request specific data and elements during navigation to reduce token usage
-- **Screenshot Capture** - Take screenshots of entire pages or specific elements
-- **Form Interaction** - Fill forms, select options, and submit data
-- **DOM Query Filtering** - Extract only the elements and attributes you need
-- **JavaScript Execution** - Run custom JavaScript in the browser
-- **Anti-Bot Protection** - Browser fingerprinting protection measures
-- **Element Selection** - Select elements by various attributes like placeholder, class, and id
-- **User Profiles** - Maintain persistent sessions for logging into websites and storing cookies
-- **Easy Setup** - Works with npx or global installation
+## Quick Start
 
-## 🚀 Installation
-
-### Prerequisites
-
-- [**Node.js**](https://nodejs.org/) v18 or later
-- Chrome browser (automatically installed by Puppeteer if needed)
-
-### Option 1: Run with npx (No Installation Required)
-
-```bash
-# Start the MCP server directly
-npx mcp-chrome-control
-```
-
-### Option 2: Global Installation
+### Installation
 
 ```bash
 # Install globally
 npm install -g mcp-chrome-control
 
-# Run from anywhere
-mcp-chrome-control
+# Or use without installation via npx
+npx mcp-chrome-control
 ```
 
-### Verify Installation
+### MCP Integration
 
-The server should start and display:
-```
-Chrome Control MCP Server running on stdio
-```
-
-## ⚙️ Configuration
-
-### Claude Desktop / Claude Code
-
-Add the following to your `.mcp.json` file:
+Add to your `.mcp.json` file:
 
 ```json
 {
@@ -83,246 +51,101 @@ Add the following to your `.mcp.json` file:
 }
 ```
 
-### VS Code / Cursor
-
-In your MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "chrome": {
-      "command": "npx",
-      "args": ["mcp-chrome-control"],
-      "env": {}
-    }
-  }
-}
-```
-
-## 📖 Usage
-
-Chrome Control MCP Server can be used with any MCP-compatible AI assistant. When properly configured, you can use natural language commands like:
-
-```
-Can you navigate to duckduckgo.com for me?
-Take a screenshot of the pricing table on this page
-Fill in the registration form with my details
-```
-
-The AI will use the appropriate Chrome Control MCP tools to complete these tasks.
-
-## 🛠️ Available Tools
-
-### Browser Management
-
-| Tool | Description |
-|------|-------------|
-| `chrome_create_browser` | Create a new browser instance |
-| `chrome_list_browsers` | List all browser instances |
-| `chrome_close_browser` | Close a browser instance |
-
-### Tab Management
-
-| Tool | Description |
-|------|-------------|
-| `chrome_create_tab` | Create a new browser tab |
-| `chrome_list_tabs` | List all tabs in a browser |
-| `chrome_close_tab` | Close a browser tab |
-
-### Navigation
-
-| Tool | Description |
-|------|-------------|
-| `chrome_navigate` | Navigate to a URL with customizable response options |
-| `chrome_wait` | Wait for elements, navigation, or time periods |
-
-### Interaction
-
-| Tool | Description |
-|------|-------------|
-| `chrome_click` | Click an element |
-| `chrome_fill` | Fill form fields |
-| `chrome_select` | Select option from dropdown |
-| `chrome_hover` | Hover over an element |
-| `chrome_mouse` | Control mouse position and actions |
-| `chrome_keyboard` | Control keyboard actions |
-
-### Capture
-
-| Tool | Description |
-|------|-------------|
-| `chrome_screenshot` | Take a screenshot of the page or an element |
-
-### Data Management
-
-| Tool | Description |
-|------|-------------|
-| `chrome_cookies` | Manage browser cookies |
-| `chrome_evaluate` | Execute JavaScript in the browser |
-
-## 🤖 LLM Integration
-
-Chrome Control is specifically designed for optimal use with LLMs (Large Language Models). Key features for LLM integration include:
-
-- **Token Efficiency**: Only receive the specific data needed
-- **Context-Aware Navigation**: Customize response formats to reduce context length
-- **Element Filtering**: Target specific elements rather than processing entire pages
-- **Action Chaining**: Perform complex tasks with minimal back-and-forth communication
-- **Intuitive Integration**: Natural language interface for browser control
-
-## 🌐 Enhanced Navigation
-
-The enhanced navigation feature allows specifying exactly what data to receive when navigating to a URL:
+### Direct Client Usage
 
 ```javascript
-// Example request with enhanced navigation
-{
-  "name": "chrome_navigate",
-  "arguments": {
-    "url": "https://example.com",
-    "responseFormat": {
-      "screenshot": true,
-      "fullPage": false,
-      "pageText": false, 
-      "pageTitle": true,
-      "elements": {
-        "selector": "input[type='text']",
-        "attributes": ["placeholder", "name", "id"],
-        "includeText": true
-      },
-      "links": true,
-      "inputs": true
-    }
-  }
+import { ChromeControlClient } from 'mcp-chrome-control/client';
+
+async function runDemo() {
+  const client = new ChromeControlClient();
+  await client.start();
+  
+  // Create a browser (visible to user)
+  const browserId = await client.createBrowser({ headless: false });
+  
+  // Navigate and interact
+  await client.navigate('https://example.com', browserId);
+  await client.screenshot(browserId, { path: 'screenshot.png' });
+  
+  // Clean up
+  await client.closeBrowser(browserId);
+  await client.stop();
 }
 ```
 
-For detailed information, see [Enhanced Navigation Documentation](docs/anti-bot-research.md).
+## Features
 
-## 👤 User Profiles & Persistence
+- **Full Browser Automation**: Navigation, clicking, form filling, keyboard/mouse control
+- **Visual Feedback**: Run Chrome in windowed mode for users to see AI's actions
+- **DOM Filtering**: Extract only relevant elements and attributes
+- **Screenshot Capabilities**: Capture full-page or element-specific screenshots
+- **Anti-Detection Measures**: Avoid bot detection through stealth techniques
+- **Session Persistence**: Maintain login sessions and cookies between runs
+- **Action Chaining**: Execute multiple browser operations in a single request
+- **Comprehensive Logging**: Detailed logs for debugging and error tracking
+- **JavaScript Execution**: Run custom JS in the browser context
 
-Chrome Control supports user profiles to maintain persistence between sessions:
+## Core Tools
 
-```javascript
-// Create a browser with persistent profile
-{
-  "name": "chrome_create_browser",
-  "arguments": {
-    "launchOptions": {
-      "headless": false,
-      "userDataDir": "/path/to/user/data/directory"
-    }
-  }
-}
-```
+| Category | Tools |
+|----------|-------|
+| **Browser Management** | Create, list, and close browsers |
+| **Navigation** | Navigate to URLs with custom response formats |
+| **Interaction** | Click, hover, fill forms, select options |
+| **Mouse & Keyboard** | Direct control of mouse and keyboard actions |
+| **Screenshots** | Take full-page or element-specific screenshots |
+| **JavaScript** | Execute custom JavaScript in browser context |
 
-Key benefits:
-- **Session Persistence** - Stay logged into websites
-- **Cookie Management** - Maintain cookies between sessions
-- **History & Bookmarks** - Access browsing history and saved pages
-- **Form Data** - Remember form fields and autofill information
+[View the complete tool reference →](https://github.com/CodingButterBot/chrome-control.wiki/Tools-Reference)
 
-For detailed information about using user profiles, see [User Profiles Documentation](docs/user-profiles.md).
+## Use Cases
 
-## 📂 Project Structure
+- **AI Web Research**: Allow AI assistants to search and analyze web content
+- **Automated Testing**: Script tests for websites and web applications
+- **Data Extraction**: Scrape and structure web data for analysis
+- **Website Monitoring**: Capture screenshots for visual monitoring
+- **Form Submission**: Automate form filling and submission
+- **Visual Demonstrations**: Show users how to perform actions on websites
 
-```
-chrome-control/
-├── bin/                   # Compiled JavaScript output
-├── src/                   # TypeScript source files
-│   ├── browser-manager.ts # Browser instance management
-│   ├── index.ts           # Main entry point
-│   ├── puppeteer.ts       # Core Chrome control functions (Puppeteer implementation)
-│   ├── register.ts        # Schema definitions
-│   ├── stdio.ts           # IO handling
-│   ├── tools.ts           # Tool definitions
-│   └── types/             # TypeScript interfaces
-├── docs/                  # Documentation
-├── tests/                 # Test files
-│   ├── examples/          # Example usage scripts
-│   └── ...                # Unit and integration tests
-├── CLAUDE.md              # Instructions for Claude AI
-├── README.md              # Project documentation
-├── package.json           # Dependencies and scripts
-└── tsconfig.json          # TypeScript configuration
-```
+## Development & Contributing
 
-## 👨‍💻 Development
-
-### Local Development Setup
+We welcome contributions! Here's how to get started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/codingbutter/chrome-control.git
+git clone https://github.com/CodingButterBot/chrome-control.git
 cd chrome-control
 
 # Install dependencies
 npm install
 
-# Start development server with auto-reload
+# Start development server
 npm run dev
-```
 
-### Testing
-
-```bash
-# Run all tests
+# Run tests
 npm run test:all
-
-# Run individual test suites
-npm run test:browser            # Test browser launching
-npm run test:mcp                # Test MCP server functionality
-npm run test:enhanced           # Test enhanced MCP interactions
-npm run test:navigation         # Test enhanced navigation
-npm run test:filtering          # Test DOM filtering functionality
-npm run test:chaining           # Test action chaining
-npm run test:multi-navigation   # Test multi-site navigation
-npm run test:interactions       # Test interactive element testing
-npm run test:advanced-filtering # Test advanced DOM filtering
-npm run test:advanced-chaining  # Test enhanced action chaining
-
-# Run examples
-npm run example:puppies         # DuckDuckGo search example
-npm run test:google-image       # Google image search with download
 ```
 
-### Adding New Browser Control Features
+See our [Contributing Guide](https://github.com/CodingButterBot/chrome-control/blob/main/CONTRIBUTING.md) for more details.
 
-1. Define parameter interface in `src/types/puppeteer.ts`
-2. Define parameter schema in `src/register.ts`
-3. Implement functionality in `src/puppeteer.ts`
-4. Add the tool to `src/tools.ts`
-5. Add tests to the `tests/` directory
+## Resources
 
-## 🔍 Troubleshooting
+- [Full Documentation](https://github.com/CodingButterBot/chrome-control.wiki)
+- [Example Scripts](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
+- [API Reference](https://github.com/CodingButterBot/chrome-control.wiki/API-Reference)
+- [Changelog](https://github.com/CodingButterBot/chrome-control/blob/main/CHANGELOG.md)
 
-### Linux Installation
+## License
 
-When running on Linux, you may need to install Chrome browser dependencies:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y libatk-bridge2.0-0 libgtk-3-0 libgbm1 libnss3 libxss1 libasound2
-```
-
-Set the Chrome executable path:
-```bash
-CHROME_PATH=/usr/bin/google-chrome npx mcp-chrome-control
-```
-
-### Common Issues
-
-- **Browser launch errors**: Ensure you have sufficient permissions and meet Puppeteer requirements
-- **Element not found**: Check if selectors are correct or try using different selector strategies
-- **Timeouts**: Increase timeouts for slow websites or operations
-- **MCP connectivity**: Verify MCP configuration in your client application
-
-## 📄 License
-
-MIT
+[MIT](https://github.com/CodingButterBot/chrome-control/blob/main/LICENSE)
 
 ---
 
 <div align="center">
   <p>Made with ❤️ for AI assistants and web automation</p>
+  <p>
+    <a href="https://github.com/CodingButterBot/chrome-control/issues">Report Bug</a> •
+    <a href="https://github.com/CodingButterBot/chrome-control/issues">Request Feature</a> •
+    <a href="https://github.com/CodingButterBot">Follow Coding Butter</a>
+  </p>
 </div>

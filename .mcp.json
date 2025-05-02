@@ -25,7 +25,8 @@
     },
     "github": {
       "type": "stdio",
-      "command": "gh-cli-mcp"
+      "command": "npx",
+      "args": ["gh-cli-mcp"]
     },
     "chrome": {
       "type": "stdio",

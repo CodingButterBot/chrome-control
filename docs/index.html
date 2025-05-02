@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome Control - Browser Automation for AI Assistants</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    :root {
+      --primary-color: #4285F4;
+      --secondary-color: #34A853;
+      --dark-color: #212121;
+      --light-color: #f8f9fa;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--dark-color);
+      background-color: var(--light-color);
+    }
+    
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--primary-color) !important;
+    }
+    
+    .hero {
+      background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+      color: white;
+      padding: 6rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background: var(--light-color);
+      clip-path: ellipse(50% 50% at 50% 100%);
+    }
+    
+    .feature-icon {
+      font-size: 2.5rem;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+    }
+    
+    .section {
+      padding: 5rem 0;
+    }
+    
+    .code-block {
+      background-color: #282c34;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      color: #abb2bf;
+      overflow-x: auto;
+    }
+    
+    .keyword {
+      color: #c678dd;
+    }
+    
+    .string {
+      color: #98c379;
+    }
+    
+    .comment {
+      color: #7f848e;
+      font-style: italic;
+    }
+    
+    .function {
+      color: #61afef;
+    }
+    
+    .footer {
+      background-color: var(--dark-color);
+      color: white;
+      padding: 3rem 0;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: #3367d6;
+      border-color: #3367d6;
+    }
+    
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <img src="images/chrome-control-logo.png" alt="Chrome Control Logo" width="40" height="40" class="d-inline-block align-text-top me-2">
+        Chrome Control
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#features">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#usage">Usage</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#documentation">Docs</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/CodingButterBot/chrome-control" target="_blank">GitHub</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container text-center">
+      <h1 class="display-4 fw-bold mb-4">Browser Automation for AI Assistants</h1>
+      <p class="lead mb-5">Control Chrome directly through JSON-RPC and MCP for seamless AI-driven browser automation</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="https://github.com/CodingButterBot/chrome-control" class="btn btn-light btn-lg px-4 py-2">View on GitHub</a>
+        <a href="https://github.com/CodingButterBot/chrome-control.wiki" class="btn btn-outline-light btn-lg px-4 py-2">Documentation</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="section bg-white" id="features">
+    <div class="container">
+      <h2 class="text-center mb-5">Key Features</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="text-center">
+            <div class="feature-icon">🧠</div>
+            <h3>AI-Optimized</h3>
+            <p>Designed specifically for AI assistants with token-efficient responses and structured data extraction.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center">
+            <div class="feature-icon">👁️</div>
+            <h3>Visual Feedback</h3>
+            <p>Option to run in windowed mode for users to see AI actions in real-time with screenshot capabilities.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center">
+            <div class="feature-icon">🛡️</div>
+            <h3>Bot-Detection Avoidance</h3>
+            <p>Stealth features to navigate modern websites without being detected as an automated system.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center">
+            <div class="feature-icon">🔄</div>
+            <h3>Session Persistence</h3>
+            <p>Support for user profiles to maintain login sessions and cookies between runs.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center">
+            <div class="feature-icon">⚡</div>
+            <h3>Action Chaining</h3>
+            <p>Execute multiple browser operations in a single request for efficient automation.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center">
+            <div class="feature-icon">📊</div>
+            <h3>DOM Filtering</h3>
+            <p>Extract only relevant elements and attributes from pages for focused data processing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Usage Section -->
+  <section class="section bg-light" id="usage">
+    <div class="container">
+      <h2 class="text-center mb-5">Quick Start</h2>
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <h3>Installation</h3>
+          <div class="code-block">
+            <pre><code><span class="comment"># Install globally</span>
+npm install -g mcp-chrome-control
+
+<span class="comment"># Or use without installation via npx</span>
+npx mcp-chrome-control</code></pre>
+          </div>
+          
+          <h3>MCP Integration</h3>
+          <div class="code-block">
+            <pre><code><span class="comment">// Add to your .mcp.json file:</span>
+{
+  <span class="string">"chrome"</span>: {
+    <span class="string">"type"</span>: <span class="string">"stdio"</span>,
+    <span class="string">"command"</span>: <span class="string">"npx"</span>,
+    <span class="string">"args"</span>: [<span class="string">"mcp-chrome-control"</span>],
+    <span class="string">"env"</span>: {}
+  }
+}</code></pre>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h3>Direct Client Usage</h3>
+          <div class="code-block">
+            <pre><code><span class="keyword">import</span> { ChromeControlClient } <span class="keyword">from</span> <span class="string">'mcp-chrome-control/client'</span>;
+
+<span class="keyword">async function</span> <span class="function">runDemo</span>() {
+  <span class="keyword">const</span> client = <span class="keyword">new</span> <span class="function">ChromeControlClient</span>();
+  <span class="keyword">await</span> client.<span class="function">start</span>();
+  
+  <span class="comment">// Create a browser (visible to user)</span>
+  <span class="keyword">const</span> browserId = <span class="keyword">await</span> client.<span class="function">createBrowser</span>({ 
+    headless: <span class="keyword">false</span> 
+  });
+  
+  <span class="comment">// Navigate and interact</span>
+  <span class="keyword">await</span> client.<span class="function">navigate</span>(<span class="string">'https://example.com'</span>, browserId);
+  <span class="keyword">await</span> client.<span class="function">screenshot</span>(browserId, { 
+    path: <span class="string">'screenshot.png'</span> 
+  });
+  
+  <span class="comment">// Clean up</span>
+  <span class="keyword">await</span> client.<span class="function">closeBrowser</span>(browserId);
+  <span class="keyword">await</span> client.<span class="function">stop</span>();
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation Section -->
+  <section class="section bg-white" id="documentation">
+    <div class="container">
+      <h2 class="text-center mb-5">Documentation & Resources</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h4 class="card-title">Full Documentation</h4>
+              <p class="card-text">Comprehensive guides, API reference, and tutorials for using Chrome Control.</p>
+              <a href="https://github.com/CodingButterBot/chrome-control.wiki" class="btn btn-primary" target="_blank">View Documentation</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h4 class="card-title">Example Scripts</h4>
+              <p class="card-text">Browse example scripts for common automation tasks and AI integrations.</p>
+              <a href="https://github.com/CodingButterBot/chrome-control/tree/main/examples" class="btn btn-primary" target="_blank">View Examples</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h4 class="card-title">API Reference</h4>
+              <p class="card-text">Detailed reference of all available tools, methods, and parameters.</p>
+              <a href="https://github.com/CodingButterBot/chrome-control.wiki/API-Reference" class="btn btn-primary" target="_blank">View API Reference</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="section bg-primary text-white">
+    <div class="container text-center">
+      <h2 class="mb-4">Ready to supercharge your AI with web automation?</h2>
+      <p class="lead mb-4">Start using Chrome Control today to enable your AI assistants to interact with the web.</p>
+      <a href="https://github.com/CodingButterBot/chrome-control" class="btn btn-light btn-lg px-4 py-2" target="_blank">Get Started</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4 mb-4 mb-md-0">
+          <h5>Chrome Control</h5>
+          <p>Browser automation for AI assistants</p>
+          <p>Made with ❤️ for AI assistants and web automation</p>
+        </div>
+        <div class="col-md-4 mb-4 mb-md-0">
+          <h5>Resources</h5>
+          <ul class="list-unstyled">
+            <li><a href="https://github.com/CodingButterBot/chrome-control.wiki" class="text-white">Documentation</a></li>
+            <li><a href="https://github.com/CodingButterBot/chrome-control/tree/main/examples" class="text-white">Examples</a></li>
+            <li><a href="https://github.com/CodingButterBot/chrome-control/blob/main/CHANGELOG.md" class="text-white">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5>Connect</h5>
+          <ul class="list-unstyled">
+            <li><a href="https://github.com/CodingButterBot/chrome-control" class="text-white">GitHub Repository</a></li>
+            <li><a href="https://github.com/CodingButterBot/chrome-control/issues" class="text-white">Report Issues</a></li>
+            <li><a href="https://github.com/CodingButterBot" class="text-white">Follow @CodingButterBot</a></li>
+          </ul>
+        </div>
+      </div>
+      <hr class="mt-4 mb-4 bg-light">
+      <div class="text-center">
+        <p class="mb-0">© 2023 Chrome Control. MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

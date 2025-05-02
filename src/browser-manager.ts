@@ -5,6 +5,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import UAPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 import { Browser, Page } from 'puppeteer';
 import { v4 as uuidv4 } from 'uuid';
+import { createLogger, LogLevel } from './utils/logger.js';
 
 // Add stealth plugins
 // @ts-expect-error - typing issue with puppeteer-extra
@@ -52,6 +53,9 @@ interface BrowserContext {
 /**
  * Manages browser instances and provides tab/window management
  */
+// Create a logger instance for browser-manager
+const logger = createLogger('browser-manager');
+
 export class BrowserManager {
   private static instance: BrowserManager;
   private browsers: Map<string, BrowserContext> = new Map();
@@ -76,8 +80,11 @@ export class BrowserManager {
    * Launch a new browser instance and track it
    */
   public async launchBrowser(options = DEFAULT_LAUNCH_OPTIONS): Promise<string> {
+    const timer = logger.startTimer('launchBrowser');
+    
     try {
-      console.error('Launching browser with options:', JSON.stringify(options));
+      logger.info('Launching browser with options');
+      logger.json(LogLevel.DEBUG, options, 'Browser launch options');
       
       // Launch browser with puppeteer-extra and stealth features
       // @ts-expect-error - typing issue with puppeteer-extra
@@ -97,8 +104,10 @@ export class BrowserManager {
       
       // Create a new page if none exists
       if (pages.length === 0) {
+        logger.debug('No initial pages found, creating a new page');
         initialPage = await browser.newPage();
       } else {
+        logger.debug(`Using existing page (found ${pages.length} pages)`);
         initialPage = pages[0];
       }
       
@@ -120,19 +129,22 @@ export class BrowserManager {
       
       // Set as default if no default exists
       if (this.defaultBrowserId === null) {
+        logger.debug(`Setting ${browserId} as default browser`);
         this.defaultBrowserId = browserId;
       }
       
-      console.error(`Browser launched with ID: ${browserId}`);
+      logger.info(`Browser launched with ID: ${browserId}`);
       
       // Setup event handlers for browser closure
       browser.on('disconnected', () => {
+        logger.debug(`Browser ${browserId} disconnected, removing`);
         this.removeBrowser(browserId);
       });
       
+      timer(); // End timer
       return browserId;
     } catch (error) {
-      console.error('Failed to launch browser:', error);
+      logger.exception(error, 'Failed to launch browser');
       throw error;
     }
   }
@@ -169,33 +181,43 @@ export class BrowserManager {
    * Create a new page in a browser
    */
   public async createPage(browserId?: string): Promise<{ browserId: string, pageId: string, page: Page }> {
-    const { browserId: id, browser } = await this.getBrowser(browserId);
+    const timer = logger.startTimer('createPage');
     
-    // Get browser context
-    const browserContext = this.browsers.get(id)!;
-    
-    // Create new page
-    const page = await browser.newPage();
-    
-    // Set random behaviors to appear more human-like
-    await this.setupPageForHumanEmulation(page);
-    
-    // Generate ID for this page
-    const pageId = uuidv4();
-    
-    // Store page
-    browserContext.pages.set(pageId, page);
-    
-    // Handle page closure
-    page.on('close', () => {
-      if (browserContext.pages.has(pageId)) {
-        browserContext.pages.delete(pageId);
-      }
-    });
-    
-    console.error(`Created new page with ID: ${pageId} in browser: ${id}`);
-    
-    return { browserId: id, pageId, page };
+    try {
+      const { browserId: id, browser } = await this.getBrowser(browserId);
+      logger.debug(`Creating new page in browser: ${id}`);
+      
+      // Get browser context
+      const browserContext = this.browsers.get(id)!;
+      
+      // Create new page
+      const page = await browser.newPage();
+      
+      // Set random behaviors to appear more human-like
+      await this.setupPageForHumanEmulation(page);
+      
+      // Generate ID for this page
+      const pageId = uuidv4();
+      
+      // Store page
+      browserContext.pages.set(pageId, page);
+      
+      // Handle page closure
+      page.on('close', () => {
+        logger.debug(`Page ${pageId} closed`);
+        if (browserContext.pages.has(pageId)) {
+          browserContext.pages.delete(pageId);
+        }
+      });
+      
+      logger.info(`Created new page with ID: ${pageId} in browser: ${id}`);
+      
+      timer();
+      return { browserId: id, pageId, page };
+    } catch (error) {
+      logger.exception(error, 'Failed to create page');
+      throw error;
+    }
   }
 
   /**
@@ -247,13 +269,22 @@ export class BrowserManager {
    * List all pages for a browser
    */
   public async listPages(browserId?: string): Promise<Array<{ id: string, url: string, title: string }>> {
+    const timer = logger.startTimer('listPages');
+    
     try {
       const id = browserId || await this.getDefaultBrowserId();
+      logger.debug(`Listing pages for browser: ${id}`);
+      
       const browserContext = this.browsers.get(id);
       
       if (!browserContext) {
-        throw new Error(`Browser with ID ${id} not found`);
+        const error = new Error(`Browser with ID ${id} not found`);
+        logger.error(error.message);
+        throw error;
       }
+      
+      // Log the number of pages found
+      logger.debug(`Found ${browserContext.pages.size} pages in browser ${id}`);
       
       const pagesInfo = await Promise.all(
         Array.from(browserContext.pages.entries()).map(async ([pageId, page]) => {
@@ -263,18 +294,20 @@ export class BrowserManager {
           try {
             url = page.url();
             title = await page.title();
+            logger.trace(`Page ${pageId} info: URL=${url}, Title=${title}`);
           } catch (error) {
             // Page might be closed or in an invalid state
-            console.error(`Error getting page info for ${pageId}:`, error);
+            logger.warn(`Error getting page info for ${pageId}: ${(error as Error).message}`);
           }
           
           return { id: pageId, url, title };
         })
       );
       
+      timer();
       return pagesInfo;
     } catch (error) {
-      console.error('Error listing pages:', error);
+      logger.exception(error, 'Error listing pages');
       throw error;
     }
   }
@@ -283,38 +316,64 @@ export class BrowserManager {
    * Close a specific page
    */
   public async closePage(pageId: string, browserId?: string): Promise<boolean> {
+    const timer = logger.startTimer(`closePage-${pageId}`);
+    
     try {
       const id = browserId || await this.getDefaultBrowserId();
+      logger.debug(`Closing page ${pageId} in browser ${id}`);
+      
       const browserContext = this.browsers.get(id);
       
       if (!browserContext) {
-        throw new Error(`Browser with ID ${id} not found`);
+        logger.error(`Browser with ID ${id} not found`);
+        return false;
       }
       
       const page = browserContext.pages.get(pageId);
       if (!page) {
+        logger.warn(`Page ${pageId} not found in browser ${id}`);
         return false;
       }
       
-      await page.close();
+      try {
+        await page.close();
+        logger.debug(`Page ${pageId} closed successfully`);
+      } catch (closeError) {
+        logger.warn(`Error while closing page ${pageId}: ${(closeError as Error).message}`);
+        // Continue execution to remove the page from our tracking
+      }
+      
       browserContext.pages.delete(pageId);
       
       // If this was the default page, set a new default if available
-      if (pageId === browserContext.defaultPageId && browserContext.pages.size > 0) {
-        const firstKey = browserContext.pages.keys().next().value;
-        // Make sure we have at least one page left
-        if (firstKey) {
-          browserContext.defaultPageId = firstKey;
+      if (pageId === browserContext.defaultPageId) {
+        if (browserContext.pages.size > 0) {
+          const firstKey = browserContext.pages.keys().next().value;
+          // Make sure we have at least one page left
+          if (firstKey) {
+            browserContext.defaultPageId = firstKey;
+            logger.debug(`Set new default page to ${firstKey}`);
+          } else {
+            // This should never happen since we just checked size > 0
+            logger.warn(`No pages found after closing ${pageId}, creating a new one`);
+            // Create a new page if all pages were closed
+            const { pageId: newPageId } = await this.createPage(id);
+            browserContext.defaultPageId = newPageId;
+            logger.debug(`Created new default page: ${newPageId}`);
+          }
         } else {
-          // Create a new page if all pages were closed
+          // Create a new page since we closed the last one
+          logger.debug(`Closed last page in browser ${id}, creating a new one`);
           const { pageId: newPageId } = await this.createPage(id);
           browserContext.defaultPageId = newPageId;
+          logger.debug(`Created new default page: ${newPageId}`);
         }
       }
       
+      timer();
       return true;
     } catch (error) {
-      console.error(`Error closing page ${pageId}:`, error);
+      logger.exception(error, `Error closing page ${pageId}`);
       return false;
     }
   }
@@ -349,25 +408,52 @@ export class BrowserManager {
    * Remove a browser from tracking and close it
    */
   private async removeBrowser(browserId: string): Promise<boolean> {
+    const timer = logger.startTimer(`removeBrowser-${browserId}`);
+    
     const browserContext = this.browsers.get(browserId);
     if (!browserContext) {
+      logger.warn(`Attempted to remove non-existent browser: ${browserId}`);
       return false;
     }
     
+    logger.info(`Removing browser ${browserId}`);
+    
     try {
-      await browserContext.browser.close();
+      // Log browser details before closing
+      logger.debug(`Browser ${browserId} had ${browserContext.pages.size} pages, created at ${browserContext.createdAt.toISOString()}`);
+      
+      // Try to close the browser
+      try {
+        await browserContext.browser.close();
+        logger.debug(`Browser ${browserId} closed successfully`);
+      } catch (closeError) {
+        logger.warn(`Error while closing browser ${browserId}: ${(closeError as Error).message}`);
+        // Continue execution to remove the browser from our tracking
+      }
+      
+      // Remove from tracking
+      this.browsers.delete(browserId);
+      logger.debug(`Removed browser ${browserId} from tracking`);
+      
+      // If this was the default browser, clear the default
+      if (this.defaultBrowserId === browserId) {
+        logger.debug(`Cleared default browser ID (was ${browserId})`);
+        this.defaultBrowserId = null;
+      }
+      
+      timer();
+      return true;
     } catch (error) {
-      console.error(`Error closing browser ${browserId}:`, error);
+      logger.exception(error, `Error removing browser ${browserId}`);
+      
+      // Still try to clean up our tracking even if an error occurred
+      this.browsers.delete(browserId);
+      if (this.defaultBrowserId === browserId) {
+        this.defaultBrowserId = null;
+      }
+      
+      return false;
     }
-    
-    this.browsers.delete(browserId);
-    
-    // If this was the default browser, clear the default
-    if (this.defaultBrowserId === browserId) {
-      this.defaultBrowserId = null;
-    }
-    
-    return true;
   }
 
   /**

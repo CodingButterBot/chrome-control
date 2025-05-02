@@ -1,51 +1,68 @@
-# Dependency directories
+# Dependencies
 node_modules/
-.pnpm-store/
+.pnp
+.pnp.js
 
-# Build output
-bin/
+# Build
+/bin/
 dist/
 build/
+*.tsbuildinfo
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Testing output
-*.png
-coverage/
+# Testing
+/coverage/
 .nyc_output/
 
-# dotenv environment variable files
+# Environment
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# IDE files
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.idea/
-*.swp
-*.swo
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# OS files
+# Cache
+.cache/
+.npm/
+.eslintcache
+.parcel-cache
+
+# OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# MCP specific
-**/.claude/settings.local.json
-.mcp.json
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Chrome User Data
+examples/user-data/
+tests/user-data-dir/
+**/Default/
+*Cache*/
+*.log
+
+# Generated artifacts
+/tests/artifacts/
+/.mcp.json.tmp
+
+# Screenshots and temporary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.webm
+*.pdf
+/tmp/

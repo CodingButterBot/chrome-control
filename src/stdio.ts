@@ -1,12 +1,19 @@
 import { z } from 'zod';
 import { McpServer as BaseMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-// Comment out for now - we'll use @ts-ignore instead
-// declare module '@modelcontextprotocol/sdk/server/mcp.js' {
-//   interface McpServer {
-//     setToolRequestHandlers(): void;
-//   }
-// }
+
+// Helper to access any object property
+function getProperty(obj: any, prop: string): any {
+  return obj[prop];
+}
+
+// Helper to call any method
+function callMethod(obj: any, method: string, ...args: any[]): any {
+  if (typeof obj[method] === 'function') {
+    return obj[method](...args);
+  }
+  return undefined;
+}
 
 /**
  * Tool class for defining Puppeteer tools
@@ -93,9 +100,43 @@ export class PuppeteerMcpServer extends BaseMcpServer {
     
     // Initialize the handlers to enable tools.list and tools.call methods
     try {
-      // @ts-expect-error - Using private method from MCP SDK
-      this.setToolRequestHandlers();
-      console.error('✅ Tool handlers initialized successfully');
+      // Try to call the setToolRequestHandlers method
+      if (callMethod(this, 'setToolRequestHandlers')) {
+        console.error('✅ Tool handlers initialized successfully (using setToolRequestHandlers)');
+      } else {
+        console.error('⚠️ setToolRequestHandlers not available, trying to register manually');
+        
+        // Get transport and see if it has a handle method
+        const transport = getProperty(this, '_transport');
+        
+        if (transport && typeof transport.handle === 'function') {
+          // Register tools.list handler
+          transport.handle('tools.list', async (params: any) => {
+            const tools = this.toolsList.map(tool => ({
+              name: tool.name,
+              description: tool.options.description
+            }));
+            return { tools };
+          });
+          
+          // Register tools.call handler
+          transport.handle('tools.call', async (params: { name: string; arguments?: any }) => {
+            const { name, arguments: args } = params;
+            const tool = this.toolsList.find(t => t.name === name);
+            
+            if (!tool) {
+              throw new Error(`Tool not found: ${name}`);
+            }
+            
+            console.error(`Executing tool: ${name}`);
+            return await tool.handler(args || {});
+          });
+          
+          console.error('✅ Tool handlers registered manually');
+        } else {
+          console.error('❌ Cannot register handlers, transport.handle not available');
+        }
+      }
     } catch (error) {
       console.error('❌ Failed to initialize tool handlers:', error);
     }
