@@ -29,7 +29,7 @@
  */
 
 import { McpServer } from './mcp-server.js';
-import { registerTools } from './tools.js';
+import { registerTools } from './tools/index.js';
 import { checkPuppeteer } from './puppeteer.js';
 import { closeAllBrowsers } from './puppeteer.js';
 import { parseArgs } from 'node:util';
