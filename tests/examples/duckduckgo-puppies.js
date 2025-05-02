@@ -59,7 +59,7 @@ async function searchPuppies() {
       id: '1',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_create_browser',
+        name: 'chrome_create_browser',
         arguments: {
           launchOptions: {
             headless: false
@@ -85,7 +85,7 @@ async function searchPuppies() {
       id: '2',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_navigate',
+        name: 'chrome_navigate',
         arguments: {
           url: 'https://duckduckgo.com',
           browserId: browserId,
@@ -146,7 +146,7 @@ async function searchPuppies() {
       id: '3',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_fill',
+        name: 'chrome_fill',
         arguments: {
           browserId: browserId,
           selector: searchInputSelector || 'input[type="text"]',
@@ -169,7 +169,7 @@ async function searchPuppies() {
       id: '4',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_keyboard',
+        name: 'chrome_keyboard',
         arguments: {
           browserId: browserId,
           action: 'press',
@@ -196,7 +196,7 @@ async function searchPuppies() {
       id: '5',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_navigate',
+        name: 'chrome_navigate',
         arguments: {
           url: '', // Current URL
           browserId: browserId,
@@ -251,7 +251,7 @@ async function searchPuppies() {
       id: '6',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_close_browser',
+        name: 'chrome_close_browser',
         arguments: {
           browserId: browserId
         }

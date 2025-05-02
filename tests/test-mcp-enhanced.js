@@ -13,7 +13,7 @@ async function runEnhancedTest() {
   console.log('🧪 Starting Enhanced MCP Server Test');
   
   // Launch the MCP server as a child process (using index.js not chrome-mcp.js)
-  const serverProcess = spawn('node', ['bin/index.js'], {
+  const serverProcess = spawn('node', ['../bin/index.js'], {
     cwd: __dirname,
     env: {
       ...process.env,
@@ -90,10 +90,10 @@ async function runEnhancedTest() {
       id: '1',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_create_browser',
+        name: 'chrome_create_browser',
         arguments: {
           launchOptions: {
-            headless: true
+            headless: false
           }
         }
       }
@@ -147,7 +147,7 @@ async function runEnhancedTest() {
       id: '2',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_navigate',
+        name: 'chrome_navigate',
         arguments: {
           url: 'https://www.google.com',
           browserId: browserId
@@ -186,7 +186,7 @@ async function runEnhancedTest() {
         id: '3',
         method: 'tools.call',
         params: {
-          name: 'puppeteer_screenshot',
+          name: 'chrome_screenshot',
           arguments: {
             name: 'google-test',
             browserId: browserId

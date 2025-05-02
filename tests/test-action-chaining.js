@@ -85,10 +85,10 @@ async function testActionChaining() {
       id: '1',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_create_browser',
+        name: 'chrome_create_browser',
         arguments: {
           launchOptions: {
-            headless: "new"
+            headless: false
           }
         }
       }
@@ -131,7 +131,7 @@ async function testActionChaining() {
       id: '2',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_chain',
+        name: 'chrome_chain',
         arguments: {
           browserId: browserId,
           actions: [
@@ -181,7 +181,7 @@ async function testActionChaining() {
       id: '3',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_chain',
+        name: 'chrome_chain',
         arguments: {
           browserId: browserId,
           actions: [
@@ -251,7 +251,7 @@ async function testActionChaining() {
       id: '4',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_chain',
+        name: 'chrome_chain',
         arguments: {
           browserId: browserId,
           actions: [
@@ -302,7 +302,7 @@ async function testActionChaining() {
       id: '5',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_chain',
+        name: 'chrome_chain',
         arguments: {
           browserId: browserId,
           actions: [

@@ -86,10 +86,10 @@ async function testDomFiltering() {
       id: '1',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_create_browser',
+        name: 'chrome_create_browser',
         arguments: {
           launchOptions: {
-            headless: "new"
+            headless: false
           }
         }
       }
@@ -133,7 +133,7 @@ async function testDomFiltering() {
       id: '2',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_navigate',
+        name: 'chrome_navigate',
         arguments: {
           url: testUrl,
           browserId: browserId,
@@ -243,7 +243,7 @@ async function testDomFiltering() {
       id: '3',
       method: 'tools.call',
       params: {
-        name: 'puppeteer_close_browser',
+        name: 'chrome_close_browser',
         arguments: {
           browserId: browserId
         }
