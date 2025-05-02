@@ -18,7 +18,8 @@
     "test:filtering": "node tests/test-dom-filtering.js",
     "test:chaining": "node tests/test-action-chaining.js",
     "test:multi-navigation": "node tests/test-multi-navigation.js",
-    "test:all": "npm run test:browser && npm run test:mcp && npm run test:enhanced && npm run test:navigation && npm run test:filtering && npm run test:chaining && npm run test:multi-navigation",
+    "test:interactions": "node tests/test-interactions.js",
+    "test:all": "npm run test:browser && npm run test:mcp && npm run test:enhanced && npm run test:navigation && npm run test:filtering && npm run test:chaining && npm run test:multi-navigation && npm run test:interactions",
     "example:puppies": "node tests/examples/duckduckgo-puppies.js",
     "postinstall": "npm run build",
     "prepare": "npm run build"
