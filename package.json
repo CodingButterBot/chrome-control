@@ -4,7 +4,9 @@
   "description": "Browser automation for AI assistants - Chrome control via JSON-RPC and MCP",
   "main": "bin/index.js",
   "type": "module",
-  "bin": "./bin/chrome-mcp.js",
+  "bin": {
+    "mcp-chrome-control": "bin/chrome-mcp.js"
+  },
   "exports": {
     ".": "./bin/index.js",
     "./client": "./bin/client.js"
@@ -52,7 +54,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/codingbutter/chrome-control.git"
+    "url": "git+https://github.com/codingbutter/chrome-control.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
