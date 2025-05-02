@@ -15,26 +15,29 @@ The new structure will organize tools by category and function:
 
 ```
 src/tools/
-├── browser/        # Browser management tools
-│   ├── create/     # Create browser tool
-│   ├── list/       # List browsers tool
-│   ├── close/      # Close browser tool
-│   ├── connect/    # Connect to existing browser tool
-│   ├── profile/    # Launch with user profile tool
-│   ├── detect/     # Detect existing browsers tool
-│   └── profiles/   # List user profiles tool
-├── tab/            # Tab management tools
-│   ├── create/     # Create tab tool
-│   ├── list/       # List tabs tool
-│   └── close/      # Close tab tool
+├── browser/                   # Browser management tools
+│   ├── create/                # Create browser implementation
+│   ├── list/                  # List browsers implementation
+│   ├── close/                 # Close browser implementation
+│   ├── ...                    # Other browser tool implementations
+│   ├── __tests__/             # Tests for all browser tools
+│   │   ├── create.test.js     # Tests for browser creation
+│   │   ├── list.test.js       # Tests for browser listing
+│   │   └── ...                # Other browser tests
+│   └── index.ts               # Exports all browser tools
+├── tab/                       # Tab management tools
+│   ├── create/                # Create tab implementation
+│   ├── list/                  # List tabs implementation
+│   ├── close/                 # Close tab implementation
+│   ├── __tests__/             # Tests for all tab tools
+│   └── index.ts               # Exports all tab tools
 └── ... (other categories)
 ```
 
-Each tool directory will contain:
-- `index.ts` - Tool implementation and exports
-- `__tests__/` - Directory containing tests
-  - `basic.test.js` - Basic functionality tests
-  - Other specialized tests as needed
+Each category directory contains:
+- Individual tool directories with implementation files
+- A `__tests__` directory with tests for all tools in that category
+- An index.ts file that exports all tools from that category
 
 ## Migration Steps
 
