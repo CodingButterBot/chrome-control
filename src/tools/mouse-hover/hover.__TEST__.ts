@@ -4,28 +4,23 @@
  * Tests the functionality of hovering over elements in the browser.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { hoverElement } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists, createTestPage } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/interaction');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('mouse-hover-tests');
+
 
 describe('hoverElement Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -35,14 +30,8 @@ describe('hoverElement Function', () => {
   // Run after all tests
   after(async () => {
     await stopMockServer(server);
-    
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png') && file.includes('hover-test')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup before each test
@@ -137,8 +126,8 @@ describe('hoverElement Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -167,7 +156,7 @@ describe('hoverElement Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully hovered over #test-box'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully hovered over #test-box'),
       'First content item should indicate successful hover'
     );
     
@@ -180,9 +169,16 @@ describe('hoverElement Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = afterHoverScreenshot.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'hover-test-after.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (afterHoverScreenshot.content[1] && 
+        typeof afterHoverScreenshot.content[1].text === 'object' && 
+        'src' in afterHoverScreenshot.content[1].text) {
+      const screenshotData = afterHoverScreenshot.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'hover-test-after.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
     
     // Verify hover state via script evaluation
     const evalResult = await executeToolCall('chrome_evaluate', {
@@ -215,9 +211,16 @@ describe('hoverElement Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = tooltipScreenshot.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'tooltip-hover-test.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (tooltipScreenshot.content[1] && 
+        typeof tooltipScreenshot.content[1].text === 'object' && 
+        'src' in tooltipScreenshot.content[1].text) {
+      const screenshotData = tooltipScreenshot.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'tooltip-hover-test.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
     
     // Verify tooltip visibility via script evaluation
     const evalResult = await executeToolCall('chrome_evaluate', {
@@ -245,7 +248,7 @@ describe('hoverElement Function', () => {
       });
       
       assert.fail('Should have thrown an error for non-existent selector');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for non-existent selector');
     }
   });

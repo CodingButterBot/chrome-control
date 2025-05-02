@@ -61,6 +61,7 @@ export interface BasePuppeteerParams {
  */
 export interface BrowserParams extends BasePuppeteerParams {
   launchOptions?: Record<string, any>;
+  timeout?: number;
 }
 
 /**

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Refactored to use temporary test directories instead of committing test screenshots
+- Removed path aliases for simpler imports and cleaner project structure
+- Consolidated documentation in the docs directory
+- Removed unnecessary files from project root
+
 ### Fixed
 - Critical error in Zod schema conversion causing "Cannot read properties of null (reading '_def')" in MCP server
 - Added robust error handling for schema conversion edge cases

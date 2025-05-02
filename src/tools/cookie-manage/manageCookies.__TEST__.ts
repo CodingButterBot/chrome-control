@@ -4,20 +4,17 @@
  * Tests the functionality of cookie management operations.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { manageCookies } from './index.js';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('manageCookies Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -73,8 +70,8 @@ describe('manageCookies Function', () => {
     
     // Verify the cookie was set
     const successLine = setCookieResult.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('success') || item.text.includes('set') || item.text.includes('testCookie'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('success') || typeof item.text === "string" && item.text.includes('set') || typeof item.text === "string" && item.text.includes('testCookie'))
     );
     assert.ok(successLine, 'Response should indicate cookie was set successfully');
     
@@ -91,8 +88,8 @@ describe('manageCookies Function', () => {
     
     // Verify our test cookie exists in the response
     const cookieLine = getCookiesResult.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        item.text.includes('testCookie') && item.text.includes('testValue')
+      (item: any) => item.text && typeof item.text === 'string' && 
+        typeof item.text === "string" && item.text.includes('testCookie') && typeof item.text === "string" && item.text.includes('testValue')
     );
     assert.ok(cookieLine, 'Response should include the test cookie we set');
   });
@@ -137,8 +134,8 @@ describe('manageCookies Function', () => {
     
     // Verify that the cookie was deleted
     const successLine = deleteResult.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('success') || item.text.includes('delete') || item.text.includes('cookieOne'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('success') || typeof item.text === "string" && item.text.includes('delete') || typeof item.text === "string" && item.text.includes('cookieOne'))
     );
     assert.ok(successLine, 'Response should indicate cookie was deleted successfully');
     
@@ -151,10 +148,10 @@ describe('manageCookies Function', () => {
     
     // Verify cookieOne is gone but cookieTwo still exists
     const cookieOneLine = getCookiesResult.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('cookieOne')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('cookieOne')
     );
     const cookieTwoLine = getCookiesResult.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('cookieTwo')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('cookieTwo')
     );
     
     assert.ok(!cookieOneLine, 'Deleted cookie should no longer be present');
@@ -188,8 +185,8 @@ describe('manageCookies Function', () => {
     
     // Verify cookies were cleared
     const successLine = clearResult.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('cleared') || item.text.includes('all cookies'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('cleared') || typeof item.text === "string" && item.text.includes('all cookies'))
     );
     assert.ok(successLine, 'Response should indicate cookies were cleared successfully');
     
@@ -202,12 +199,12 @@ describe('manageCookies Function', () => {
     
     // Verify no cookies exist or we get an indication that there are no cookies
     const noCookiesLine = getCookiesResult.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('no cookies') || item.text.includes('0 cookies') || item.text.includes('empty'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('no cookies') || typeof item.text === "string" && item.text.includes('0 cookies') || typeof item.text === "string" && item.text.includes('empty'))
     );
     
     const cookieLine = getCookiesResult.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('testCookie')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('testCookie')
     );
     
     assert.ok(!cookieLine, 'Test cookie should no longer be present after clearing');
@@ -231,12 +228,12 @@ describe('manageCookies Function', () => {
       assert.ok(Array.isArray(result.content), 'Invalid action content should be an array');
       
       const errorLine = result.content.find(
-        item => item.text && typeof item.text === 'string' && 
-          (item.text.includes('error') || item.text.includes('invalid') || item.text.includes('action'))
+        (item: any) => item.text && typeof item.text === 'string' && 
+          (typeof item.text === "string" && item.text.includes('error') || typeof item.text === "string" && item.text.includes('invalid') || typeof item.text === "string" && item.text.includes('action'))
       );
       
       assert.ok(errorLine, 'Response should indicate invalid action error');
-    } catch (error) {
+    } catch (error: any) {
       // If it throws, that's also acceptable error handling
       assert.ok(error, 'Invalid action should result in error');
     }

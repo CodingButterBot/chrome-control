@@ -10,16 +10,54 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import * as readline from 'readline';
+import os from 'os';
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Screenshot directory
-const SCREENSHOT_DIR = path.join(__dirname, '../test-screenshots/client-test');
-if (!fs.existsSync(SCREENSHOT_DIR)) {
-  fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+/**
+ * Creates a temporary directory for test artifacts
+ * 
+ * @param {string} testName Name of the test for subdirectory
+ * @returns {string} Path to the temporary directory
+ */
+function createTempTestDirectory(testName) {
+  const tempDir = path.join(os.tmpdir(), 'chrome-control-tests', testName);
+  
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  
+  return tempDir;
 }
+
+/**
+ * Cleans up temporary test directories
+ * 
+ * @param {string} tempDir Path to the temporary directory
+ * @param {string[]} patterns File patterns to delete (default: ['*.png'])
+ */
+function cleanupTempDirectory(tempDir, patterns = ['*.png']) {
+  if (!fs.existsSync(tempDir)) return;
+  
+  const files = fs.readdirSync(tempDir);
+  
+  for (const file of files) {
+    // Simple pattern matching
+    if (patterns.some(pattern => {
+      const regex = new RegExp(
+        pattern.replace('.', '\\.').replace('*', '.*')
+      );
+      return regex.test(file);
+    })) {
+      fs.unlinkSync(path.join(tempDir, file));
+    }
+  }
+}
+
+// Screenshot directory
+const SCREENSHOT_DIR = createTempTestDirectory('client-test');
 
 // Results tracking
 const results = {

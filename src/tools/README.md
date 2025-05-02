@@ -143,9 +143,9 @@ Each tool follows a consistent implementation pattern:
 ```typescript
 // File: src/tools/tool-name/index.ts
 
-import { createTool } from '../../mcp-server.js';
-import { ParamsType, ChromeToolResponse } from '../../types/puppeteer.js';
-import { paramsSchema } from '../../register.js';
+import { createTool } from '@src/mcp-server.js';
+import { ParamsType, ChromeToolResponse } from '@types/puppeteer.js';
+import { paramsSchema } from '@src/register.js';
 
 /**
  * Primary tool function with JSDoc comments
@@ -157,7 +157,7 @@ import { paramsSchema } from '../../register.js';
  */
 export async function toolFunction(params: ParamsType): Promise<ChromeToolResponse> {
   // Implementation or forwarding to puppeteer.js
-  const { originalFunction } = await import('../../puppeteer.js');
+  const { originalFunction } = await import('@src/puppeteer.js');
   return await originalFunction(params);
 }
 
@@ -177,32 +177,31 @@ Tests are placed directly alongside the implementation file, with one test file 
 ```typescript
 // File: src/tools/tool-name/functionName.__TEST__.ts
 
-import { strict as assert } from 'assert';
+import { describe, it, before, after } from 'mocha';
+import assert from 'assert';
 import { functionName } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
 import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils.js';
+  setupTestEnvironment,
+  createTestServer,
+  callTool
+} from '@tests/utils/test-utils.js';
 
 describe('functionName', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let env;
   
   // Setup and teardown
   before(async () => {
-    server = await startMockServer();
+    // Create test environment with headless browser
+    env = await setupTestEnvironment();
   });
   
   after(async () => {
-    await stopMockServer(server);
+    // Properly close all browsers and cleanup
+    await env.teardown();
   });
   
   // Tests
@@ -250,4 +249,17 @@ npm test -- src/tools/browser-create/createBrowser.__TEST__.ts
 
 # Run all tests
 npm test
+
+# Run unit tests with shared browser (prevents multiple windows)
+npm run test:unit:shared
+
+# Run unit tests with visible browser (for debugging)
+npm run test:unit:visible
+
+# Run unit tests with headless browser (default)
+npm run test:unit:headless
 ```
+
+Test options can be controlled with environment variables:
+- `SHARE_BROWSER=0` - Disable browser sharing (creates a new browser for each test)
+- `CHROME_VISIBLE=1` - Use visible browser (default is headless)

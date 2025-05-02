@@ -664,6 +664,17 @@ export function wait(ms) {
 }
 
 /**
+ * Ensures a directory exists, creating it if it doesn't
+ * 
+ * @param {string} dir Directory path to ensure exists
+ */
+export function ensureDirectoryExists(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+/**
  * Kill all Chrome processes forcefully using the OS
  * This is a last resort for cleaning up
  * 
@@ -672,21 +683,83 @@ export function wait(ms) {
 async function killAllChromeProcesses() {
   const { execSync } = await import('child_process');
   const os = await import('os');
+  const platform = os.platform();
   
   try {
-    console.log('Forcefully killing all Chrome processes...');
+    console.log('\n⚠️ FORCEFULLY KILLING ALL CHROME PROCESSES ⚠️');
+    console.log('This is necessary to prevent abandoned browser windows');
     
-    // Different command based on OS
-    if (os.platform() === 'win32') {
-      execSync('taskkill /F /IM chrome.exe /T', { stdio: 'ignore' });
+    // Platform-specific cleanup strategies
+    if (platform === 'win32') {
+      // Windows - kill all chrome processes
+      console.log('Executing Windows Chrome process cleanup...');
+      try {
+        // Find all Chrome PIDs and kill them
+        execSync('taskkill /F /IM chrome.exe /T', { stdio: 'pipe' });
+        execSync('taskkill /F /IM chromedriver.exe /T', { stdio: 'pipe' });
+      } catch (err) {
+        // Ignore errors - some processes might not exist
+        console.log('Some Chrome processes may not have been found (expected)');
+      }
+    } else if (platform === 'darwin') {
+      // macOS - use a combination of pkill and killall
+      console.log('Executing macOS Chrome process cleanup...');
+      try {
+        // Try various commands to ensure Chrome is killed
+        execSync('pkill -9 -f "Google Chrome"', { stdio: 'pipe' });
+        execSync('killall -9 "Google Chrome"', { stdio: 'pipe' });
+        execSync('killall -9 Chrome', { stdio: 'pipe' });
+      } catch (err) {
+        // Ignore errors - some processes might not exist
+        console.log('Some Chrome processes may not have been found (expected)');
+      }
     } else {
-      // Linux/macOS
-      execSync("pkill -f chromium || pkill -f chrome || true", { stdio: 'ignore' });
+      // Linux - use pkill with different patterns
+      console.log('Executing Linux Chrome process cleanup...');
+      
+      // Function to safely execute a command
+      const safeExec = (cmd) => {
+        try {
+          execSync(cmd, { stdio: 'pipe' });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
+      
+      // Try different approaches to kill Chrome
+      const attempts = [
+        // Kill by full Chrome command line with SIGKILL (-9)
+        () => safeExec("pkill -9 -f '[c]hrome --type=renderer'"),
+        () => safeExec("pkill -9 -f '[c]hrome --headless'"),
+        () => safeExec("pkill -9 -f '[c]hrome --remote-debugging'"),
+        
+        // Kill by exact process name
+        () => safeExec("pkill -9 chrome"),
+        () => safeExec("pkill -9 chromium"),
+        () => safeExec("pkill -9 chromium-browser"),
+        
+        // Last resort - try to kill any chrome process
+        () => safeExec("killall -9 chrome"),
+        () => safeExec("killall -9 chromium"),
+        
+        // Final approach - use more aggressive pattern matching
+        () => safeExec("pkill -9 -f [c]hrome"),
+        () => safeExec("pkill -9 -f [c]hromium")
+      ];
+      
+      // Run all kill attempts
+      for (const attempt of attempts) {
+        attempt();
+      }
     }
     
-    console.log('All Chrome processes killed');
+    // Sleep briefly to allow processes to be cleaned up
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    console.log('Chrome processes cleanup completed');
   } catch (error) {
-    console.error('Failed to kill Chrome processes:', error.message);
+    console.error('Error during Chrome process cleanup:', error.message);
   }
 }
 

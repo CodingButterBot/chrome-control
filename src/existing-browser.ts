@@ -19,14 +19,14 @@
  * @module existing-browser
  */
 
-import { execSync, exec } from 'child_process';
+import { /* execSync - currently unused */ exec } from 'child_process';
 import { promisify } from 'util';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 import puppeteer from 'puppeteer-core';
 import { Browser } from 'puppeteer';
-import { createLogger, LogLevel } from './utils/logger.js';
+import { createLogger /* LogLevel - currently unused */ } from './utils/logger.js';
 
 // Create a logger instance
 const logger = createLogger('existing-browser');
@@ -379,8 +379,8 @@ export async function launchWithProfile(
   
   logger.debug(`Launching Chrome with command: ${chromePath} ${args.join(' ')}`);
   
-  // Launch Chrome process
-  const chromeProcess = exec(`"${chromePath}" ${args.join(' ')}`);
+  // Launch Chrome process (not storing reference as we're connecting via debug port)
+  exec(`"${chromePath}" ${args.join(' ')}`);
   
   // Wait for Chrome to initialize and debugging port to be available
   await new Promise<void>((resolve) => {

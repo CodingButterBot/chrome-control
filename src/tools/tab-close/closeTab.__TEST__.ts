@@ -4,20 +4,17 @@
  * Tests the functionality of closing a browser tab.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { closeTab } from './index.js';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('closeTab Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -46,11 +43,11 @@ describe('closeTab Function', () => {
     if (browserId) {
       try {
         await executeToolCall('chrome_close_browser', { browserId });
-      } catch (error) {
+      } catch (error: any) {
         // Ignore errors on browser close during cleanup
       }
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -69,8 +66,8 @@ describe('closeTab Function', () => {
     
     // Check success message
     assert.ok(
-      result.content[0].text.includes('Tab closed successfully') ||
-      result.content[0].text.includes('successfully'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Tab closed successfully') ||
+      typeof result.content[0].text === "string" && result.content[0].text.includes('successfully'),
       'First content item should indicate successful tab closure'
     );
     
@@ -79,7 +76,7 @@ describe('closeTab Function', () => {
     
     // Check that the closed tab is not in the list
     const tabInfo = listResult.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes(tabId)
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes(tabId)
     );
     
     assert.ok(!tabInfo, 'Tab should not be present in the list after closing');
@@ -94,8 +91,8 @@ describe('closeTab Function', () => {
     
     // Check error message
     assert.ok(
-      result.content[0].text.includes('not found') ||
-      result.content[0].text.includes('error'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('not found') ||
+      typeof result.content[0].text === "string" && result.content[0].text.includes('error'),
       'Response should indicate that the tab was not found'
     );
   });
@@ -108,8 +105,8 @@ describe('closeTab Function', () => {
     
     // Check error message
     assert.ok(
-      result.content[0].text.includes('Tab ID is required') ||
-      result.content[0].text.includes('error'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Tab ID is required') ||
+      typeof result.content[0].text === "string" && result.content[0].text.includes('error'),
       'Response should indicate that tab ID is required'
     );
   });

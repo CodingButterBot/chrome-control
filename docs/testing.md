@@ -2,6 +2,77 @@
 
 This document outlines the comprehensive testing approach used in Chrome Control to ensure all MCP tools function correctly and can be reliably used by LLMs for browser automation.
 
+## TypeScript and Testing
+
+Chrome Control uses TypeScript for all code, including test files. Tests are written using Mocha and assertions are done using Node's built-in `assert` module.
+
+### Explicit Mocha Imports
+
+All test files should explicitly import Mocha functions:
+
+```typescript
+import { describe, it, before, after } from 'mocha';
+import assert from 'assert';
+```
+
+### Module Imports
+
+The project uses relative imports for module references:
+
+```typescript
+// Use relative imports like this:
+import { foo } from '../../../utils/some-util.js';
+```
+
+In TypeScript files, always include the `.js` extension in imports even though the actual file has a `.ts` extension. This is required for ESM compatibility.
+
+### VSCode Setup for Test Files
+
+When using VSCode to work on test files, you might encounter issues with TypeScript not recognizing Mocha's global functions like `describe()` or `it()`. To fix these issues:
+
+1. We've provided type definitions in `src/types/test-globals.d.ts` 
+2. Configure VSCode with proper TypeScript settings:
+   - Open `.vscode/settings.json` (created for you)
+   - Ensure it contains:
+     ```json
+     {
+       "javascript.validate.enable": true,
+       "typescript.validate.enable": true,
+       "typescript.tsdk": "node_modules/typescript/lib"
+     }
+     ```
+3. If you're still having issues, reload VSCode window (Ctrl+Shift+P > "Developer: Reload Window")
+
+### Running TypeScript Tests Directly
+
+You can run the TypeScript tests directly without compiling them first:
+
+```bash
+npm run test:tools
+```
+
+This uses the Mocha configuration in `.mocharc.json` which:
+- Uses ts-node to compile TypeScript on the fly
+- Registers module aliases for path imports
+- Sets experimental-specifier-resolution to node for easier imports
+- Sets a timeout of 10 seconds for tests
+
+### Type Checking Tests
+
+To verify TypeScript types in test files:
+
+```bash
+npm run typecheck:test
+```
+
+### Checking All Code
+
+To run both linting and type checking:
+
+```bash
+npm run check
+```
+
 ## Testing Philosophy
 
 Chrome Control uses a multi-layered testing approach to ensure high quality and reliability:
@@ -99,17 +170,18 @@ Key characteristics:
 
 ## Screenshot Verification
 
-All visual tests save screenshots to the `test-screenshots/` directory for manual verification. These are organized by test category:
+All visual tests save screenshots to temporary directories for manual verification. These are organized by test category:
 
-- `llm-simulation/` - LLM interface simulation tests
-- `browser/` - Browser management tests
-- `tabs/` - Tab management tests
-- `navigation/` - Navigation tests
-- `interaction/` - User interaction tests (click, hover, etc.)
-- `forms/` - Form filling tests
-- `cookies/` - Cookie management tests
-- `evaluation/` - JavaScript evaluation tests
-- `chaining/` - Action chaining tests
+- `browser` - Browser management tests
+- `tabs` - Tab management tests
+- `navigation` - Navigation tests
+- `interaction` - User interaction tests (click, hover, etc.)
+- `forms` - Form filling tests
+- `cookies` - Cookie management tests
+- `evaluation` - JavaScript evaluation tests
+- `chaining` - Action chaining tests
+
+For more details on how temporary directories are used for test artifacts, see [Testing with Temporary Directories](./testing-with-temp-dirs.md).
 
 ## Automated Testing with Pre-commit Hooks
 
@@ -145,10 +217,58 @@ In a CI/CD environment, the tests can be run with the headless flag set to true 
 
 When adding new features to Chrome Control:
 
-1. Add unit tests for the new functionality
+1. Add unit tests for the new functionality using the `.__TEST__.ts` pattern next to implementation files
 2. Add visual verification tests in `mcp-full-feature-test.js`
 3. Update schema tests if new tool parameters are added
 4. Ensure all tests pass before committing changes
+
+### Co-located Test Pattern
+
+Unit tests are co-located with the implementation files they test, following this pattern:
+
+```
+src/tools/tool-name/
+  ├── index.ts                 # Implementation
+  └── toolFunction.__TEST__.ts # Test file
+```
+
+Example test file structure:
+
+```typescript
+import { describe, it, before, after } from 'mocha';
+import { strict as assert } from 'assert';
+import { myFunction } from './index';
+import { 
+  startMockServer, 
+  stopMockServer,
+  executeToolCall
+} from '@tests/utils/test-utils';
+
+describe('myFunction', () => {
+  let server;
+  
+  before(async () => {
+    // Run before all tests
+    server = await startMockServer();
+  });
+  
+  after(async () => {
+    // Run after all tests
+    await stopMockServer(server);
+  });
+  
+  it('should do something useful', async () => {
+    // Test case
+    const result = await myFunction({ param1: 'value1' });
+    
+    // Assertions
+    assert.ok(result.content, 'Response should include content');
+    assert.ok(
+      result.content[0].text.includes('Expected text'),
+      'Response should include expected text'
+    );
+  });
+});
 
 ## Test HTTP Server
 

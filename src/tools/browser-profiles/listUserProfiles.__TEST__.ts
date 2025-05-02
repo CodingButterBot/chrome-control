@@ -4,20 +4,18 @@
  * Tests the functionality of listing available Chrome user profiles.
  */
 
+import { describe, it, before, after } from 'mocha';
 import { strict as assert } from 'assert';
 import { listUserProfiles } from './index.js';
-import path from 'path';
-import fs from 'fs';
+// These modules are not currently used in this test file
+// import path from 'path';
+// import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer } from '../../../tests/utils/test-utils.js';
 
 describe('listUserProfiles Function', () => {
-  let server;
+  let server: any;
   
   // Run before all tests
   before(async () => {
@@ -42,7 +40,7 @@ describe('listUserProfiles Function', () => {
     const firstItem = result.content[0];
     assert.ok(firstItem.type === 'text', 'First item should be text');
     assert.ok(
-      typeof firstItem.text === 'string' && firstItem.text.includes('Chrome user profiles'),
+      typeof firstItem.text === 'string' && typeof firstItem.text === "string" && firstItem.text.includes('Chrome user profiles'),
       'First content item should mention Chrome user profiles'
     );
   });
@@ -66,9 +64,9 @@ describe('listUserProfiles Function', () => {
       assert.ok(Array.isArray(result.content), 'Content should be an array');
       
       // Check error message
-      const errorItem = result.content.find(item => 
+      const errorItem = result.content.find((item: any) => 
         item.text && typeof item.text === 'string' && 
-        item.text.includes('error')
+        typeof item.text === "string" && item.text.includes('error')
       );
       
       assert.ok(errorItem, 'Response should include error information');

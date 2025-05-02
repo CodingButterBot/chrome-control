@@ -14,6 +14,7 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import os from 'os';
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -46,6 +47,46 @@ puppeteer.use(StealthPlugin());
 puppeteer.use(AnonymizeUAPlugin());
 
 // Track test results
+/**
+ * Creates a temporary directory for test artifacts
+ * 
+ * @param {string} testName Name of the test for subdirectory
+ * @returns {string} Path to the temporary directory
+ */
+function createTempTestDirectory(testName) {
+  const tempDir = path.join(os.tmpdir(), 'chrome-control-tests', testName);
+  
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  
+  return tempDir;
+}
+
+/**
+ * Cleans up temporary test directories
+ * 
+ * @param {string} tempDir Path to the temporary directory
+ * @param {string[]} patterns File patterns to delete (default: ['*.png'])
+ */
+function cleanupTempDirectory(tempDir, patterns = ['*.png']) {
+  if (!fs.existsSync(tempDir)) return;
+  
+  const files = fs.readdirSync(tempDir);
+  
+  for (const file of files) {
+    // Simple pattern matching
+    if (patterns.some(pattern => {
+      const regex = new RegExp(
+        pattern.replace('.', '\\.').replace('*', '.*')
+      );
+      return regex.test(file);
+    })) {
+      fs.unlinkSync(path.join(tempDir, file));
+    }
+  }
+}
+
 const results = {
   passed: 0,
   failed: 0,
@@ -55,22 +96,15 @@ const results = {
 
 // Track screenshots for visual verification
 const screenshotDirs = {
-  browser: path.join(__dirname, '../test-screenshots/browser'),
-  tabs: path.join(__dirname, '../test-screenshots/tabs'),
-  navigation: path.join(__dirname, '../test-screenshots/navigation'),
-  interaction: path.join(__dirname, '../test-screenshots/interaction'),
-  forms: path.join(__dirname, '../test-screenshots/forms'),
-  cookies: path.join(__dirname, '../test-screenshots/cookies'),
-  evaluation: path.join(__dirname, '../test-screenshots/evaluation'),
-  chaining: path.join(__dirname, '../test-screenshots/chaining')
+  browser: createTempTestDirectory('browser'),
+  tabs: createTempTestDirectory('tabs'),
+  navigation: createTempTestDirectory('navigation'),
+  interaction: createTempTestDirectory('interaction'),
+  forms: createTempTestDirectory('forms'),
+  cookies: createTempTestDirectory('cookies'),
+  evaluation: createTempTestDirectory('evaluation'),
+  chaining: createTempTestDirectory('chaining')
 };
-
-// Ensure screenshot directories exist
-Object.values(screenshotDirs).forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-});
 
 /**
  * Create a test HTTP server with pages for testing all features
@@ -2063,7 +2097,7 @@ async function runTests() {
     
     if (results.failed === 0) {
       console.log('\n✅ All MCP tool tests passed!');
-      console.log('Screenshots saved to test-screenshots/ directory for visual verification');
+      console.log('Screenshots saved to temporary directories for visual verification');
     } else {
       console.log('\n❌ Some MCP tool tests failed!');
       process.exit(1);

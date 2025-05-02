@@ -4,28 +4,23 @@
  * Tests the functionality of waiting for various conditions during navigation.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { waitFor } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists, createTestPage } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/navigation');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('navigation-wait-tests');
+
 
 describe('waitFor Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -35,14 +30,8 @@ describe('waitFor Function', () => {
   // Run after all tests
   after(async () => {
     await stopMockServer(server);
-    
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup before each test
@@ -61,8 +50,8 @@ describe('waitFor Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -105,7 +94,7 @@ describe('waitFor Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully waited for selector'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully waited for selector'),
       'First content item should indicate successful wait'
     );
     
@@ -121,9 +110,16 @@ describe('waitFor Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = screenshotResult.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'wait-for-selector.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (screenshotResult.content[1] && 
+        typeof screenshotResult.content[1].text === 'object' && 
+        'src' in screenshotResult.content[1].text) {
+      const screenshotData = screenshotResult.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'wait-for-selector.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
   });
   
   it('should wait for a specified time period', async () => {
@@ -151,7 +147,7 @@ describe('waitFor Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes(`Successfully waited for ${waitTime}ms`),
+      typeof result.content[0].text === "string" && result.content[0].text.includes(`Successfully waited for ${waitTime}ms`),
       'First content item should indicate successful time wait'
     );
     
@@ -193,7 +189,7 @@ describe('waitFor Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully waited for function'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully waited for function'),
       'First content item should indicate successful function wait'
     );
     
@@ -234,7 +230,7 @@ describe('waitFor Function', () => {
       });
       
       assert.fail('Should have thrown a timeout error');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error when waiting times out');
     }
   });

@@ -4,18 +4,16 @@
  * Tests the functionality of closing browser instances.
  */
 
-const assert = require('assert');
-const { closeBrowser } = require('./index');
+import { describe, it, before, after } from 'mocha';
+import assert from 'assert';
+import { closeBrowser } from './index.ts';
 
-// Import the test utils
-const { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} = require('../../../tests/utils/test-utils');
+// Import the test utils (using relative paths for now)
+// TODO: Update to use path aliases when the path alias system is fully implemented
+import { startMockServer, stopMockServer, executeToolCall } from '../../../tests/utils/test-utils.js';
 
 describe('closeBrowser Function', () => {
-  let server;
+  let server: any;
   
   // Run before all tests
   before(async () => {
@@ -42,20 +40,21 @@ describe('closeBrowser Function', () => {
     
     // Check that it indicates successful closure
     assert.ok(
-      result.content[0].text.includes('Browser closed successfully'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Browser closed successfully'),
       'Should indicate browser was closed successfully'
     );
     
     // Verify browser is actually closed by trying to list it
     const listResult = await executeToolCall('chrome_list_browsers', {});
-    const browsersLine = listResult.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('Available browsers')
-    );
+    // browsersLine is used for debugging but not in assertions
+    // const browsersLine = listResult.content.find(
+    //   (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Available browsers')
+    // );
     
     // If no browsers were created by other tests, this should be 0
     assert.ok(
-      !listResult.content.some(item => 
-        item.text && typeof item.text === 'string' && item.text.includes(browserId)
+      !listResult.content.some((item: any) => 
+        item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes(browserId)
       ),
       'Browser should no longer be listed after closing'
     );
@@ -72,8 +71,8 @@ describe('closeBrowser Function', () => {
     
     // Should indicate browser not found or already closed
     assert.ok(
-      result.content[0].text.includes('not found') || 
-      result.content[0].text.includes('already closed'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('not found') || 
+      typeof result.content[0].text === "string" && result.content[0].text.includes('already closed'),
       'Should indicate browser not found or already closed'
     );
   });
@@ -87,9 +86,9 @@ describe('closeBrowser Function', () => {
     
     // Check that it indicates successful closure
     assert.ok(
-      result.content[0].text.includes('Browser closed successfully') ||
-      result.content[0].text.includes('not found') || 
-      result.content[0].text.includes('already closed'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Browser closed successfully') ||
+      typeof result.content[0].text === "string" && result.content[0].text.includes('not found') || 
+      typeof result.content[0].text === "string" && result.content[0].text.includes('already closed'),
       'Should indicate browser was closed successfully or was not found'
     );
   });

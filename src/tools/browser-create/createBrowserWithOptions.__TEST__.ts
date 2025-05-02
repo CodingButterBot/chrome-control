@@ -4,19 +4,18 @@
  * Tests creating browsers with various configuration options.
  */
 
-const assert = require('assert');
-const { createBrowser, createBrowserWithViewport } = require('./index');
+import { describe, it, before, after, afterEach } from 'mocha';
+import assert from 'assert';
+import { createBrowser, createBrowserWithViewport } from './index.js';
 
 // Import the test utils
-const { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} = require('../../../tests/utils/test-utils');
+import { startMockServer, stopMockServer, executeToolCall } from '../../../tests/utils/test-utils.js';
+// Import browser manager for testing
+import * as browserManager from '../../browser-manager.js';
 
 describe('createBrowser with Options', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -33,7 +32,7 @@ describe('createBrowser with Options', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
   });
   
@@ -50,7 +49,7 @@ describe('createBrowser with Options', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Browser launched successfully'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Browser launched successfully'),
       'First content item should indicate successful launch'
     );
     
@@ -76,7 +75,7 @@ describe('createBrowser with Options', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Browser launched successfully'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Browser launched successfully'),
       'First content item should indicate successful launch'
     );
     
@@ -97,7 +96,7 @@ describe('createBrowser with Options', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Browser launched successfully'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Browser launched successfully'),
       'First content item should indicate successful launch'
     );
     

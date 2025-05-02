@@ -4,28 +4,23 @@
  * Tests the functionality of submitting forms.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { submitForm } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists, createTestPage } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/forms');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('form-submit-tests');
+
 
 describe('submitForm Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -35,14 +30,8 @@ describe('submitForm Function', () => {
   // Run after all tests
   after(async () => {
     await stopMockServer(server);
-    
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png') && file.includes('form-submit')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup before each test
@@ -57,8 +46,8 @@ describe('submitForm Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -103,7 +92,7 @@ describe('submitForm Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully submitted form'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully submitted form'),
       'First content item should indicate successful form submission'
     );
     
@@ -116,9 +105,16 @@ describe('submitForm Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = afterSubmitScreenshot.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'form-submit-result.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (afterSubmitScreenshot.content[1] && 
+        typeof afterSubmitScreenshot.content[1].text === 'object' && 
+        'src' in afterSubmitScreenshot.content[1].text) {
+      const screenshotData = afterSubmitScreenshot.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'form-submit-result.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
     
     // Verify the form was submitted by checking the result div
     const evalResult = await executeToolCall('chrome_evaluate', {
@@ -160,7 +156,7 @@ describe('submitForm Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully submitted form'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully submitted form'),
       'First content item should indicate successful form submission'
     );
     
@@ -180,8 +176,8 @@ describe('submitForm Function', () => {
   
   it('should handle forms with navigation', async () => {
     // Create two test pages - one with a form that redirects, and one as the target
-    // First create the target page
-    const targetPage = await createTestPage(browserId, `
+    // First create the target page (the variable is used implicitly via the created page)
+    await createTestPage(browserId, `
       <html>
         <body>
           <h1 id="result">Form submission successful</h1>
@@ -225,7 +221,7 @@ describe('submitForm Function', () => {
     
     // Check that it indicates some kind of completion
     assert.ok(
-      result.content.some(item => typeof item.text === 'string' && item.text.includes('form')),
+      result.content.some((item: any) => typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('form')),
       'Response should include information about the form submission'
     );
   });
@@ -252,7 +248,7 @@ describe('submitForm Function', () => {
       });
       
       assert.fail('Should have thrown an error for non-existent selector');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for non-existent selector');
     }
   });

@@ -4,8 +4,9 @@
  * Tests the validation of response format options.
  */
 
-const assert = require('assert');
-const { validateResponseFormat } = require('./index');
+import { describe, it } from 'mocha';
+import assert from 'assert';
+import { validateResponseFormat } from './index.js';
 
 describe('validateResponseFormat Function', () => {
   it('should return false for undefined or null options', () => {

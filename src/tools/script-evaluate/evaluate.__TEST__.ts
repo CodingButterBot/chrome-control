@@ -4,28 +4,24 @@
  * Tests the functionality of evaluating JavaScript in the browser context.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { evaluateScript } from './index.js';
 import path from 'path';
-import fs from 'fs';
+// This module is not currently used in this test file
+// import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists, createTestPage } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/evaluation');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('script-evaluate-tests');
+
 
 describe('evaluateScript Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -75,8 +71,8 @@ describe('evaluateScript Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -151,7 +147,7 @@ describe('evaluateScript Function', () => {
     });
     
     // Parse the JSON result
-    const parsedResult = JSON.parse(result.content[1].text);
+    const parsedResult = JSON.parse(result.content[1].text) as string;
     
     // Check the parsed object
     assert.deepStrictEqual(
@@ -173,12 +169,12 @@ describe('evaluateScript Function', () => {
       browserId,
       tabId,
       script: `
-        Array.from(document.querySelectorAll('#items li')).map(li => li.innerText)
+        Array.from(document.querySelectorAll('#items li')).map((li: any) => li.innerText)
       `
     });
     
     // Parse the JSON result
-    const parsedResult = JSON.parse(result.content[1].text);
+    const parsedResult = JSON.parse(result.content[1].text) as string;
     
     // Check the parsed array
     assert.deepStrictEqual(
@@ -198,7 +194,7 @@ describe('evaluateScript Function', () => {
       });
       
       assert.fail('Should have thrown an error for invalid script');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for invalid script');
     }
   });

@@ -4,43 +4,50 @@
  * Tests the basic functionality of the navigate function.
  */
 
-const assert = require('assert');
-const { navigate, navigateAndGetText, navigateAndGetLinks } = require('./index');
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
+import { strict as assert } from 'assert';
+import { navigate, navigateAndGetText, navigateAndGetLinks } from './index.js';
 
 // Import the test utils
-const { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} = require('../../../tests/utils/test-utils');
+import { 
+  createTestServer, 
+  callTool
+} from '@tests/utils/test-utils.js';
 
 describe('navigate Function', () => {
-  let server;
-  let browserId;
+  // This environment variable was intended for potential test configuration
+  // but is not used in this test file
+  // let env;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
-    server = await startMockServer();
-  });
-  
-  // Run after all tests
-  after(async () => {
-    await stopMockServer(server);
+    // Create server only
+    const serverSetup = await createTestServer();
+    server = serverSetup.server;
   });
   
   // Setup for each test
   beforeEach(async () => {
-    // Create browser
-    const createResult = await executeToolCall('chrome_create_browser', {});
-    browserId = createResult.context.browserId;
+    // Create browser for each test
+    const result = await callTool(server, 'chrome_create_browser', {});
+    browserId = result.context.browserId;
   });
   
   // Clean up after each test
   afterEach(async () => {
     // Close browser if one was opened
     if (browserId) {
-      await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      await callTool(server, 'chrome_close_browser', { browserId });
+      browserId = undefined;
+    }
+  });
+  
+  // Run after all tests
+  after(async () => {
+    if (server) {
+      server.stop && server.stop();
     }
   });
   
@@ -58,18 +65,18 @@ describe('navigate Function', () => {
     
     // Check that it indicates successful navigation
     assert.ok(
-      result.content[0].text.includes('Successfully navigated'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully navigated'),
       'Should indicate successful navigation'
     );
     
     // Check page title (example.com has a predictable title)
     const titleItem = result.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('Page title')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Page title')
     );
     
     assert.ok(titleItem, 'Response should include page title');
     assert.ok(
-      titleItem.text.includes('Example Domain'),
+      typeof titleItem.text === "string" && titleItem.text.includes('Example Domain'),
       'Title should be "Example Domain"'
     );
   });
@@ -80,7 +87,7 @@ describe('navigate Function', () => {
     
     // Check that it indicates successful navigation
     assert.ok(
-      result.content[0].text.includes('Successfully navigated'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully navigated'),
       'Should indicate successful navigation'
     );
   });
@@ -93,18 +100,18 @@ describe('navigate Function', () => {
     
     // Check that it includes page text
     const textItem = result.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('Page text')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Page text')
     );
     
     assert.ok(textItem, 'Response should include page text');
     assert.ok(
-      textItem.text.includes('This domain is for use in illustrative examples'),
+      typeof textItem.text === "string" && textItem.text.includes('This domain is for use in illustrative examples'),
       'Text should include content from example.com'
     );
     
     // Make sure it doesn't include links
     const linksItem = result.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('Links found')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Links found')
     );
     
     assert.ok(!linksItem, 'Response should not include links');
@@ -118,14 +125,14 @@ describe('navigate Function', () => {
     
     // Check that it includes links
     const linksItem = result.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('Links found')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Links found')
     );
     
     assert.ok(linksItem, 'Response should include links');
     
     // Check that it doesn't include page text
     const textItem = result.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes('Page text')
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Page text')
     );
     
     assert.ok(!textItem, 'Response should not include page text');

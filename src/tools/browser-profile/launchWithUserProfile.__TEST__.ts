@@ -4,20 +4,18 @@
  * Tests the functionality of launching Chrome with specific user profiles.
  */
 
+import { describe, it, before, after } from 'mocha';
 import { strict as assert } from 'assert';
 import { launchWithUserProfile } from './index.js';
-import path from 'path';
-import fs from 'fs';
+// These modules are not currently used in this test file
+// import path from 'path';
+// import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('launchWithUserProfile Function', () => {
-  let server;
+  let server: any;
   
   // Run before all tests
   before(async () => {
@@ -42,7 +40,7 @@ describe('launchWithUserProfile Function', () => {
       
       // If no profiles found, skip test
       if (!profilesResult.content || !profilesResult.content[0] || 
-          profilesResult.content[0].text.includes('Found 0 Chrome user profiles')) {
+          typeof profilesResult.content[0].text === "string" && profilesResult.content[0].text.includes('Found 0 Chrome user profiles')) {
         console.log('Skipping test: No Chrome profiles available');
         this.skip();
         return;
@@ -51,8 +49,8 @@ describe('launchWithUserProfile Function', () => {
       // Find the first profile name
       let profileName = 'Default'; // Default fallback
       for (const item of profilesResult.content) {
-        if (typeof item.text === 'string' && item.text.includes('Name:')) {
-          const match = item.text.match(/Name: ([^,]+)/);
+        if (typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Name:')) {
+          const match = typeof item.text === "string" && item.text.match(/Name: ([^,]+)/);
           if (match && match[1]) {
             profileName = match[1].trim();
             break;
@@ -74,7 +72,7 @@ describe('launchWithUserProfile Function', () => {
       
       // Check that it indicates some kind of result (success or at least attempted)
       assert.ok(
-        result.content[0].text.includes('profile'),
+        typeof result.content[0].text === "string" && result.content[0].text.includes('profile'),
         'First content item should mention profile'
       );
       
@@ -82,7 +80,7 @@ describe('launchWithUserProfile Function', () => {
       if (result.context.browserId) {
         await executeToolCall('chrome_close_browser', { browserId: result.context.browserId });
       }
-    } catch (error) {
+    } catch (error: any) {
       // In some test environments, this might fail due to lack of proper Chrome installation
       // We'll just log the error but not fail the test
       console.log(`Profile launch test error (expected in some environments): ${error.message}`);
@@ -99,7 +97,7 @@ describe('launchWithUserProfile Function', () => {
       });
       
       assert.fail('Should have thrown an error for non-existent profile');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for non-existent profile');
     }
   });

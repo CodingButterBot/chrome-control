@@ -4,27 +4,27 @@
  * Tests the functionality of controlling mouse actions in the browser.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { controlMouse } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists
-} from '../../../tests/utils/test-utils.js';
+// Note: We're using relative paths for tests while the path alias system is 
+// being fully implemented for ESM modules
+import { startMockServer, stopMockServer, executeToolCall } from '../../../tests/utils/test-utils.js';
 
-// Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/interaction');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+// Import our test utils
+import { createTempTestDirectory, cleanupTempDirectory } from '../../utils/test-utils.js';
+
+// Setup a temporary test directory
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('mouse-control-tests');
 
 describe('controlMouse Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -36,12 +36,7 @@ describe('controlMouse Function', () => {
     await stopMockServer(server);
     
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png') && file.startsWith('mouse-control-test')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup before each test
@@ -64,8 +59,8 @@ describe('controlMouse Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -88,7 +83,7 @@ describe('controlMouse Function', () => {
     
     // Check success message
     assert.ok(
-      result.content[0].text.includes('Mouse moved to coordinates'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Mouse moved to coordinates'),
       'First content item should indicate successful mouse movement'
     );
   });
@@ -111,7 +106,7 @@ describe('controlMouse Function', () => {
     
     // Check success message
     assert.ok(
-      result.content[0].text.includes('Mouse click performed'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Mouse click performed'),
       'First content item should indicate successful mouse click'
     );
     
@@ -144,9 +139,16 @@ describe('controlMouse Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = screenshotResult.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'mouse-click-test.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (screenshotResult.content[1] && 
+        typeof screenshotResult.content[1].text === 'object' && 
+        'src' in screenshotResult.content[1].text) {
+      const screenshotData = screenshotResult.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'mouse-click-test.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
   });
   
   it('should handle invalid parameters gracefully', async () => {
@@ -161,7 +163,7 @@ describe('controlMouse Function', () => {
       });
       
       assert.fail('Should have thrown an error for invalid action');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for invalid action');
     }
   });

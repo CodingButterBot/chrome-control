@@ -16,20 +16,56 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import http from 'http';
+import os from 'os';
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Creates a temporary directory for test artifacts
+ * 
+ * @param {string} testName Name of the test for subdirectory
+ * @returns {string} Path to the temporary directory
+ */
+function createTempTestDirectory(testName) {
+  const tempDir = path.join(os.tmpdir(), 'chrome-control-tests', testName);
+  
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  
+  return tempDir;
+}
+
+/**
+ * Cleans up temporary test directories
+ * 
+ * @param {string} tempDir Path to the temporary directory
+ * @param {string[]} patterns File patterns to delete (default: ['*.png'])
+ */
+function cleanupTempDirectory(tempDir, patterns = ['*.png']) {
+  if (!fs.existsSync(tempDir)) return;
+  
+  const files = fs.readdirSync(tempDir);
+  
+  for (const file of files) {
+    // Simple pattern matching
+    if (patterns.some(pattern => {
+      const regex = new RegExp(
+        pattern.replace('.', '\\.').replace('*', '.*')
+      );
+      return regex.test(file);
+    })) {
+      fs.unlinkSync(path.join(tempDir, file));
+    }
+  }
+}
+
 // Constants
 const DEFAULT_TIMEOUT = 30000;
 const TEST_SERVER_PORT = 3050;
-const SCREENSHOT_DIR = path.join(__dirname, '../test-screenshots/llm-simulation');
-
-// Create screenshot directory if it doesn't exist
-if (!fs.existsSync(SCREENSHOT_DIR)) {
-  fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
-}
+const SCREENSHOT_DIR = createTempTestDirectory('llm-simulation');
 
 // Tracking test results
 const results = {
@@ -686,7 +722,7 @@ async function runTests() {
     
     if (results.failed === 0) {
       console.log('\n✅ All LLM simulation tests passed!');
-      console.log('Screenshots available in test-screenshots/llm-simulation/');
+      console.log(`Screenshots available in temporary directory: ${SCREENSHOT_DIR}`);
     } else {
       console.error('\n❌ Some LLM simulation tests failed!');
       process.exit(1);

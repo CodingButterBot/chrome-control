@@ -4,19 +4,16 @@
  * Tests the functionality of detecting existing browser instances.
  */
 
+import { describe, it, before, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { detectExistingBrowsers } from './index.js';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('detectExistingBrowsers Function', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -33,7 +30,7 @@ describe('detectExistingBrowsers Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
   });
   
@@ -51,9 +48,9 @@ describe('detectExistingBrowsers Function', () => {
     
     // Verify specific parts of the content
     const detectionTextLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && (
-        item.text.includes('Detected') || item.text.includes('browsers') || 
-        item.text.includes('Chrome instances') || item.text.includes('debug')
+      (item: any) => item.text && typeof item.text === 'string' && (
+        typeof item.text === "string" && item.text.includes('Detected') || typeof item.text === "string" && item.text.includes('browsers') || 
+        typeof item.text === "string" && item.text.includes('Chrome instances') || typeof item.text === "string" && item.text.includes('debug')
       )
     );
     
@@ -61,7 +58,7 @@ describe('detectExistingBrowsers Function', () => {
     
     // There should be at least one browser instance detected
     const browsersDetectedLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && /\d+/.test(item.text)
+      (item: any) => item.text && typeof item.text === 'string' && /\d+/.test(item.text)
     );
     
     assert.ok(browsersDetectedLine, 'Response should indicate number of browsers detected');
@@ -74,7 +71,7 @@ describe('detectExistingBrowsers Function', () => {
     // Close any browsers we created
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
     
     // Call the function directly
@@ -86,9 +83,9 @@ describe('detectExistingBrowsers Function', () => {
     
     // The response should at least indicate it looked for browsers
     const detectionTextLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && (
-        item.text.includes('Detected') || item.text.includes('browsers') || 
-        item.text.includes('Chrome instances') || item.text.includes('debug')
+      (item: any) => item.text && typeof item.text === 'string' && (
+        typeof item.text === "string" && item.text.includes('Detected') || typeof item.text === "string" && item.text.includes('browsers') || 
+        typeof item.text === "string" && item.text.includes('Chrome instances') || typeof item.text === "string" && item.text.includes('debug')
       )
     );
     

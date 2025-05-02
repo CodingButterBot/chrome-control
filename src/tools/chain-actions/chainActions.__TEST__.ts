@@ -4,19 +4,16 @@
  * Tests the functionality of chaining multiple browser actions together.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { chainActions } from './index.js';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('chainActions Function', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -76,9 +73,9 @@ describe('chainActions Function', () => {
     
     // Check that all actions were executed
     assert.ok(
-      result.content.some(item => 
+      result.content.some((item: any) => 
         item.text && typeof item.text === 'string' && 
-        item.text.includes('chain') && item.text.includes('complet')
+        typeof item.text === "string" && item.text.includes('chain') && typeof item.text === "string" && item.text.includes('complet')
       ),
       'Response should indicate the action chain completed'
     );
@@ -91,9 +88,9 @@ describe('chainActions Function', () => {
     });
     
     assert.ok(
-      evalResult.content.some(item => 
+      evalResult.content.some((item: any) => 
         item.text && typeof item.text === 'string' && 
-        item.text.includes('Results for: test query')
+        typeof item.text === "string" && item.text.includes('Results for: test query')
       ),
       'The button click in the action chain should have updated the results div'
     );
@@ -133,16 +130,16 @@ describe('chainActions Function', () => {
     assert.ok(Array.isArray(result.content), 'Content should be an array');
     
     // Check for screenshot data
-    const screenshotItem = result.content.find(item => 
+    const screenshotItem = result.content.find((item: any) => 
       (item.image && typeof item.image === 'string') || 
-      (item.text && typeof item.text === 'string' && item.text.includes('screenshot'))
+      (item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('screenshot'))
     );
     assert.ok(screenshotItem, 'Response should include screenshot data or reference');
     
     // Check for evaluation result
-    const evalItem = result.content.find(item => 
+    const evalItem = result.content.find((item: any) => 
       item.text && typeof item.text === 'string' && 
-      (item.text.includes('Test Page') || item.text.includes('title'))
+      (typeof item.text === "string" && item.text.includes('Test Page') || typeof item.text === "string" && item.text.includes('title'))
     );
     assert.ok(evalItem, 'Response should include evaluation result with page title');
   });
@@ -190,9 +187,9 @@ describe('chainActions Function', () => {
     });
     
     assert.ok(
-      evalResult.content.some(item => 
+      evalResult.content.some((item: any) => 
         item.text && typeof item.text === 'string' && 
-        item.text.includes('Name: Test User') && item.text.includes('Selection: 2')
+        typeof item.text === "string" && item.text.includes('Name: Test User') && typeof item.text === "string" && item.text.includes('Selection: 2')
       ),
       'The chained form actions should have updated the output div with form values'
     );
@@ -223,10 +220,10 @@ describe('chainActions Function', () => {
     assert.ok(Array.isArray(result.content), 'Content should be an array');
     
     // Verify that an error was returned for the invalid selector
-    const errorLine = result.content.find(item => 
+    const errorLine = result.content.find((item: any) => 
       item.text && typeof item.text === 'string' && 
-      (item.text.includes('error') || item.text.includes('failed') || 
-       item.text.includes('#non-existent-element') || item.text.includes('selector'))
+      (typeof item.text === "string" && item.text.includes('error') || typeof item.text === "string" && item.text.includes('failed') || 
+       typeof item.text === "string" && item.text.includes('#non-existent-element') || typeof item.text === "string" && item.text.includes('selector'))
     );
     
     assert.ok(errorLine, 'Response should indicate an error occurred with the invalid selector');

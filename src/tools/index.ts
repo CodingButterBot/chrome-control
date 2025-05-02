@@ -135,8 +135,8 @@ export const allTools: Tool<any>[] = [
  * 
  * @example
  * ```typescript
- * import { McpServer } from './mcp-server.js';
- * import { registerTools } from './tools/index.js';
+ * import { McpServer } from '../mcp-server.js';
+ * import { registerTools } from './index.js';
  * 
  * const server = new McpServer();
  * registerTools(server);

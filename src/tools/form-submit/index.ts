@@ -5,7 +5,7 @@
  */
 
 import { createTool } from '../../mcp-server.js';
-import { BrowserParams, ChromeToolResponse } from '../../types/puppeteer.js';
+import { ChromeToolResponse } from '../../types/puppeteer.js';
 import { z } from 'zod';
 
 // Define form submit parameters schema

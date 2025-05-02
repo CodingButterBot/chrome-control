@@ -4,20 +4,17 @@
  * Tests the functionality of keyboard typing operations.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { controlKeyboardType } from './index.js';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('controlKeyboardType Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -82,8 +79,8 @@ describe('controlKeyboardType Function', () => {
     
     // Verify that typing was successful
     const successLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('success') || item.text.includes('typed') || item.text.includes('Hello World'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('success') || typeof item.text === "string" && item.text.includes('typed') || typeof item.text === "string" && item.text.includes('Hello World'))
     );
     assert.ok(successLine, 'Response should indicate successful typing');
     
@@ -94,8 +91,8 @@ describe('controlKeyboardType Function', () => {
       expression: 'document.getElementById("output").textContent'
     });
     
-    assert.ok(evalResult.content.some(item => 
-      item.text && typeof item.text === 'string' && item.text.includes('Hello World')),
+    assert.ok(evalResult.content.some((item: any) => 
+      item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Hello World')),
       'The typed text should appear in the output element'
     );
   });
@@ -122,8 +119,8 @@ describe('controlKeyboardType Function', () => {
     
     // Verify that typing was successful
     const successLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('success') || item.text.includes('typed') || item.text.includes('textarea'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('success') || typeof item.text === "string" && item.text.includes('typed') || typeof item.text === "string" && item.text.includes('textarea'))
     );
     assert.ok(successLine, 'Response should indicate successful typing');
     
@@ -134,8 +131,8 @@ describe('controlKeyboardType Function', () => {
       expression: 'document.getElementById("textArea").value'
     });
     
-    assert.ok(evalResult.content.some(item => 
-      item.text && typeof item.text === 'string' && item.text.includes('Hello from textarea')),
+    assert.ok(evalResult.content.some((item: any) => 
+      item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Hello from textarea')),
       'The typed text should appear in the textarea'
     );
   });
@@ -167,8 +164,8 @@ describe('controlKeyboardType Function', () => {
       expression: 'document.getElementById("output").textContent'
     });
     
-    assert.ok(evalResult.content.some(item => 
-      item.text && typeof item.text === 'string' && item.text.includes('Special @#$%^&*() characters')),
+    assert.ok(evalResult.content.some((item: any) => 
+      item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes('Special @#$%^&*() characters')),
       'The typed text with special characters should appear in the output element'
     );
   });
@@ -188,12 +185,12 @@ describe('controlKeyboardType Function', () => {
       assert.ok(Array.isArray(result.content), 'Invalid tab ID content should be an array');
       
       const errorLine = result.content.find(
-        item => item.text && typeof item.text === 'string' && 
-          (item.text.includes('error') || item.text.includes('invalid') || item.text.includes('not found'))
+        (item: any) => item.text && typeof item.text === 'string' && 
+          (typeof item.text === "string" && item.text.includes('error') || typeof item.text === "string" && item.text.includes('invalid') || typeof item.text === "string" && item.text.includes('not found'))
       );
       
       assert.ok(errorLine, 'Response should indicate invalid tab ID error');
-    } catch (error) {
+    } catch (error: any) {
       // If it throws, that's also acceptable error handling
       assert.ok(error, 'Invalid tab ID should result in error');
     }

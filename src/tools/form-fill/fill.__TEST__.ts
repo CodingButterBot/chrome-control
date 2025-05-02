@@ -4,28 +4,23 @@
  * Tests the functionality of filling form fields with values.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { fillFormField } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists, createTestPage } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/forms');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('form-fill-tests');
+
 
 describe('fillFormField Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -35,14 +30,8 @@ describe('fillFormField Function', () => {
   // Run after all tests
   after(async () => {
     await stopMockServer(server);
-    
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup before each test
@@ -72,8 +61,8 @@ describe('fillFormField Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -95,7 +84,7 @@ describe('fillFormField Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully filled #username'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully filled #username'),
       'First content item should indicate successful form fill'
     );
     
@@ -108,9 +97,16 @@ describe('fillFormField Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = screenshotResult.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'text-input-fill.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (screenshotResult.content[1] && 
+        typeof screenshotResult.content[1].text === 'object' && 
+        'src' in screenshotResult.content[1].text) {
+      const screenshotData = screenshotResult.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'text-input-fill.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
     
     // Verify the value was actually set via script evaluation
     const evalResult = await executeToolCall('chrome_evaluate', {
@@ -137,7 +133,7 @@ describe('fillFormField Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully filled #message'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully filled #message'),
       'First content item should indicate successful form fill'
     );
     
@@ -166,7 +162,7 @@ describe('fillFormField Function', () => {
       });
       
       assert.fail('Should have thrown an error for non-existent selector');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for non-existent selector');
     }
   });
@@ -183,7 +179,7 @@ describe('fillFormField Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully filled #email'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully filled #email'),
       'First content item should indicate successful form fill'
     );
     

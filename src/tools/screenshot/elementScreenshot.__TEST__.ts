@@ -4,26 +4,22 @@
  * Tests taking screenshots of specific elements.
  */
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { takeElementScreenshot } = require('./index');
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { takeElementScreenshot } from './index.js';
 
 // Import the test utils
-const { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists
-} = require('../../../tests/utils/test-utils');
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(__dirname, '../../../test-screenshots/screenshot');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('screenshot-tests');
+
 
 describe('elementScreenshot Function', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -36,7 +32,7 @@ describe('elementScreenshot Function', () => {
     
     // Clean up any screenshots created during testing
     const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
+    screenshots.forEach((file: any) => {
       if (file.endsWith('.png')) {
         fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
       }
@@ -60,7 +56,7 @@ describe('elementScreenshot Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
   });
   
@@ -78,14 +74,20 @@ describe('elementScreenshot Function', () => {
     
     // Check that screenshot is in the content
     const screenshotItem = result.content.find(
-      item => item.text && typeof item.text === 'object' && item.text.src
+      (item: any) => item.text && typeof item.text === 'object' && 'src' in item.text
     );
     
     assert.ok(screenshotItem, 'Response should include a screenshot');
-    assert.ok(
-      screenshotItem.text.src.startsWith('data:image/png;base64,'),
-      'Screenshot should be a base64-encoded PNG'
-    );
+    
+    // Type guard to ensure we have a valid screenshot item with src property
+    if (screenshotItem && typeof screenshotItem.text === 'object' && 'src' in screenshotItem.text) {
+      assert.ok(
+        screenshotItem.text.src.startsWith('data:image/png;base64,'),
+        'Screenshot should be a base64-encoded PNG'
+      );
+    } else {
+      assert.fail('Screenshot item should have text.src property');
+    }
   });
   
   it('should handle non-existent elements gracefully', async () => {
@@ -98,7 +100,7 @@ describe('elementScreenshot Function', () => {
       
       // If we reach here, the test should fail
       assert.fail('Should have thrown an error for non-existent element');
-    } catch (error) {
+    } catch (error: any) {
       // Check that the error is appropriate
       assert.ok(error, 'Should throw an error for non-existent element');
       assert.ok(
@@ -125,7 +127,7 @@ describe('elementScreenshot Function', () => {
     
     // Check that screenshot is in the content
     const screenshotItem = result.content.find(
-      item => item.text && typeof item.text === 'object' && item.text.src
+      (item: any) => item.text && typeof item.text === 'object' && 'src' in item.text
     );
     
     assert.ok(screenshotItem, 'Response should include a screenshot');

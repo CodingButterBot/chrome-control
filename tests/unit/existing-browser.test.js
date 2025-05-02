@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const assert = require('assert');
+const os = require('os');
 
 // Import the test utils
 const { 
@@ -18,9 +19,50 @@ const {
   ensureDirectoryExists
 } = require('../utils/test-utils');
 
+
+/**
+ * Creates a temporary directory for test artifacts
+ * 
+ * @param {string} testName Name of the test for subdirectory
+ * @returns {string} Path to the temporary directory
+ */
+function createTempTestDirectory(testName) {
+  const tempDir = path.join(os.tmpdir(), 'chrome-control-tests', testName);
+  
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  
+  return tempDir;
+}
+
+/**
+ * Cleans up temporary test directories
+ * 
+ * @param {string} tempDir Path to the temporary directory
+ * @param {string[]} patterns File patterns to delete (default: ['*.png'])
+ */
+function cleanupTempDirectory(tempDir, patterns = ['*.png']) {
+  if (!fs.existsSync(tempDir)) return;
+  
+  const files = fs.readdirSync(tempDir);
+  
+  for (const file of files) {
+    // Simple pattern matching
+    if (patterns.some(pattern => {
+      const regex = new RegExp(
+        pattern.replace('.', '\.').replace('*', '.*')
+      );
+      return regex.test(file);
+    })) {
+      fs.unlinkSync(path.join(tempDir, file));
+    }
+  }
+}
+
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(__dirname, '../../test-screenshots/existing-browser');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('existing-browser');
+
 
 describe('Existing Browser Integration', () => {
   let server;
@@ -34,13 +76,9 @@ describe('Existing Browser Integration', () => {
   after(async () => {
     await stopMockServer(server);
     
-    // Clean up any screenshots created during testing
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    // Clean up any test artifacts
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR);
+  });
   });
   
   describe('Chrome Profile Detection', () => {

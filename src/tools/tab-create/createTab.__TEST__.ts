@@ -4,19 +4,16 @@
  * Tests the functionality of creating new browser tabs.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { createTab } from './index.js';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('createTab Function', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   let tabsToClose = [];
   
   // Run before all tests
@@ -43,7 +40,7 @@ describe('createTab Function', () => {
     for (const tabId of tabsToClose) {
       try {
         await executeToolCall('chrome_close_tab', { browserId, tabId });
-      } catch (e) {
+      } catch (e: any) {
         // Ignore errors closing tabs
       }
     }
@@ -51,7 +48,7 @@ describe('createTab Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
   });
   
@@ -78,15 +75,15 @@ describe('createTab Function', () => {
     
     // Verify the tab was created with the correct URL
     const urlLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && item.text.includes(url)
+      (item: any) => item.text && typeof item.text === 'string' && typeof item.text === "string" && item.text.includes(url)
     );
     assert.ok(urlLine, 'Response should include the specified URL');
     
     // Additionally verify the tab exists by listing tabs
     const listResult = await executeToolCall('chrome_list_tabs', { browserId });
-    const tabListed = listResult.content.some(item => 
+    const tabListed = listResult.content.some((item: any) => 
       item.text && typeof item.text === 'string' && 
-      item.text.includes(result.context.tabId)
+      typeof item.text === "string" && item.text.includes(result.context.tabId)
     );
     assert.ok(tabListed, 'The created tab should be listed in chrome_list_tabs');
   });
@@ -109,8 +106,8 @@ describe('createTab Function', () => {
     
     // Verify the tab was created with about:blank
     const urlLine = result.content.find(
-      item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('about:blank') || item.text.includes('blank page'))
+      (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('about:blank') || typeof item.text === "string" && item.text.includes('blank page'))
     );
     assert.ok(urlLine, 'Response should indicate a blank page was opened');
   });
@@ -148,14 +145,14 @@ describe('createTab Function', () => {
     // Verify both tabs exist by listing tabs
     const listResult = await executeToolCall('chrome_list_tabs', { browserId });
     
-    const firstTabListed = listResult.content.some(item => 
+    const firstTabListed = listResult.content.some((item: any) => 
       item.text && typeof item.text === 'string' && 
-      item.text.includes(result1.context.tabId)
+      typeof item.text === "string" && item.text.includes(result1.context.tabId)
     );
     
-    const secondTabListed = listResult.content.some(item => 
+    const secondTabListed = listResult.content.some((item: any) => 
       item.text && typeof item.text === 'string' && 
-      item.text.includes(result2.context.tabId)
+      typeof item.text === "string" && item.text.includes(result2.context.tabId)
     );
     
     assert.ok(firstTabListed, 'The first tab should be listed');
@@ -175,13 +172,13 @@ describe('createTab Function', () => {
       assert.ok(Array.isArray(result.content), 'Invalid browser ID content should be an array');
       
       const errorLine = result.content.find(
-        item => item.text && typeof item.text === 'string' && 
-          (item.text.includes('error') || item.text.includes('invalid') || 
-          item.text.includes('not found') || item.text.includes('browser'))
+        (item: any) => item.text && typeof item.text === 'string' && 
+          (typeof item.text === "string" && item.text.includes('error') || typeof item.text === "string" && item.text.includes('invalid') || 
+          typeof item.text === "string" && item.text.includes('not found') || typeof item.text === "string" && item.text.includes('browser'))
       );
       
       assert.ok(errorLine, 'Response should indicate invalid browser ID error');
-    } catch (error) {
+    } catch (error: any) {
       // If it throws, that's also acceptable error handling
       assert.ok(error, 'Invalid browser ID should result in error');
     }

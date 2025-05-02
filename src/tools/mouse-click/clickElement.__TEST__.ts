@@ -4,28 +4,23 @@
  * Tests the functionality of clicking elements in the browser.
  */
 
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
-import { clickElement } from './index';
+import { clickElement } from './index.js';
 import path from 'path';
 import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists,
-  createTestPage
-} from '../../../tests/utils/test-utils';
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists, createTestPage } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../test-screenshots/interaction');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('mouse-click-tests');
+
 
 describe('clickElement Function', () => {
-  let server;
-  let browserId;
-  let tabId;
+  let server: any;
+  let browserId: string | undefined;
+  let tabId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -35,14 +30,8 @@ describe('clickElement Function', () => {
   // Run after all tests
   after(async () => {
     await stopMockServer(server);
-    
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png') && file.includes('click-test')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup before each test
@@ -115,8 +104,8 @@ describe('clickElement Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
-      tabId = null;
+      browserId = undefined;
+      tabId = undefined;
     }
   });
   
@@ -145,7 +134,7 @@ describe('clickElement Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully clicked element'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully clicked element'),
       'First content item should indicate successful click'
     );
     
@@ -158,9 +147,16 @@ describe('clickElement Function', () => {
     });
     
     // Save screenshot to file for review
-    const screenshotData = afterClickScreenshot.content[1].text.src.split(',')[1];
-    const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'click-test-after.png');
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    // Add type guard to ensure we have the correct structure
+    if (afterClickScreenshot.content[1] && 
+        typeof afterClickScreenshot.content[1].text === 'object' && 
+        'src' in afterClickScreenshot.content[1].text) {
+      const screenshotData = afterClickScreenshot.content[1].text.src.split(',')[1];
+      const screenshotPath = path.join(TEST_SCREENSHOT_DIR, 'click-test-after.png');
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshotData, 'base64'));
+    } else {
+      assert.fail('Screenshot should have a content item with text.src property');
+    }
     
     // Verify the click was registered via script evaluation
     const clickCountResult = await executeToolCall('chrome_evaluate', {
@@ -201,7 +197,7 @@ describe('clickElement Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully clicked element'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully clicked element'),
       'First content item should indicate successful click'
     );
     
@@ -232,7 +228,7 @@ describe('clickElement Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Successfully clicked element'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Successfully clicked element'),
       'First content item should indicate successful click'
     );
     
@@ -260,7 +256,7 @@ describe('clickElement Function', () => {
       });
       
       assert.fail('Should have thrown an error for non-existent selector');
-    } catch (error) {
+    } catch (error: any) {
       assert.ok(error, 'Should throw an error for non-existent selector');
     }
   });

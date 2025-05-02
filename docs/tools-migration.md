@@ -77,27 +77,27 @@ For each remaining tool, follow these steps:
 | Tool Name | Category | Status | Assigned To | PR Link |
 |-----------|----------|--------|-------------|---------|
 | `chrome_create_browser` | browser-create | ✅ Completed | | |
-| `chrome_list_browsers` | browser-list | 📋 Pending | | |
-| `chrome_close_browser` | browser-close | 📋 Pending | | |
-| `chrome_create_tab` | tab-create | 📋 Pending | | |
-| `chrome_list_tabs` | tab-list | 📋 Pending | | |
-| `chrome_close_tab` | tab-close | 📋 Pending | | |
+| `chrome_list_browsers` | browser-list | ✅ Completed | | |
+| `chrome_close_browser` | browser-close | ✅ Completed | | |
+| `chrome_create_tab` | tab-create | ✅ Completed | | |
+| `chrome_list_tabs` | tab-list | ✅ Completed | | |
+| `chrome_close_tab` | tab-close | ✅ Completed | | |
 | `chrome_navigate` | navigation-navigate | ✅ Completed | | |
-| `chrome_wait` | navigation-wait | 📋 Pending | | |
+| `chrome_wait` | navigation-wait | ✅ Completed | | |
 | `chrome_screenshot` | screenshot | ✅ Completed | | |
-| `chrome_click` | mouse-click | 📋 Pending | | |
-| `chrome_hover` | mouse-hover | 📋 Pending | | |
-| `chrome_mouse` | mouse-control | 📋 Pending | | |
-| `chrome_keyboard` | keyboard | 📋 Pending | | |
-| `chrome_fill` | form-fill | 📋 Pending | | |
-| `chrome_select` | form-select | 📋 Pending | | |
-| `chrome_cookies` | cookie-manage | 📋 Pending | | |
-| `chrome_evaluate` | script-evaluate | 📋 Pending | | |
-| `chrome_chain` | chain-actions | 📋 Pending | | |
-| `chrome_connect_existing` | browser-connect | 📋 Pending | | |
-| `chrome_launch_with_profile` | browser-profile | 📋 Pending | | |
-| `chrome_detect_existing` | browser-detect | 📋 Pending | | |
-| `chrome_list_profiles` | browser-profiles | 📋 Pending | | |
+| `chrome_click` | mouse-click | ✅ Completed | | |
+| `chrome_hover` | mouse-hover | ✅ Completed | | |
+| `chrome_mouse` | mouse-control | ✅ Completed | | |
+| `chrome_keyboard` | keyboard | ✅ Completed | | |
+| `chrome_fill` | form-fill | ✅ Completed | | |
+| `chrome_select` | form-select | ✅ Completed | | |
+| `chrome_cookies` | cookie-manage | ✅ Completed | | |
+| `chrome_evaluate` | script-evaluate | ✅ Completed | | |
+| `chrome_chain` | chain-actions | ✅ Completed | | |
+| `chrome_connect_existing` | browser-connect | ✅ Completed | | |
+| `chrome_launch_with_profile` | browser-profile | ✅ Completed | | |
+| `chrome_detect_existing` | browser-detect | ✅ Completed | | |
+| `chrome_list_profiles` | browser-profiles | ✅ Completed | | |
 
 ## Testing Strategy
 

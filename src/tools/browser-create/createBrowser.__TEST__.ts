@@ -4,26 +4,25 @@
  * Tests the basic functionality of creating a browser with default options.
  */
 
-const assert = require('assert');
-const { createBrowser } = require('./index');
+import { describe, it, before, after, afterEach } from 'mocha';
+import { strict as assert } from 'assert';
+import { createBrowser } from './index.js';
 
 // Import the test utils
-const { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists
-} = require('../../../tests/utils/test-utils');
+// Note: These imports are kept for potential future use
+// but are currently not used in this test file
+// import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
+import { executeToolCall } from '@tests/utils/test-utils.js';
 
 // Setup test screenshot directory
-const path = require('path');
-const fs = require('fs');
-const TEST_SCREENSHOT_DIR = path.join(__dirname, '../../../test-screenshots/browser');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+import path from 'path';
+import fs from 'fs';
+
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('browser-create-tests');
 
 describe('createBrowser Function', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -33,14 +32,8 @@ describe('createBrowser Function', () => {
   // Run after all tests
   after(async () => {
     await stopMockServer(server);
-    
     // Clean up any test artifacts
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Clean up after each test
@@ -48,7 +41,7 @@ describe('createBrowser Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
   });
   
@@ -67,7 +60,7 @@ describe('createBrowser Function', () => {
     
     // Check that it indicates success
     assert.ok(
-      result.content[0].text.includes('Browser launched successfully'),
+      typeof result.content[0].text === "string" && result.content[0].text.includes('Browser launched successfully'),
       'First content item should indicate successful launch'
     );
   });

@@ -4,26 +4,23 @@
  * Tests taking full page screenshots with various parameters.
  */
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { takeFullPageScreenshot } = require('./index');
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha';
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { takeFullPageScreenshot } from './index.js';
 
 // Import the test utils
-const { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall,
-  ensureDirectoryExists
-} = require('../../../tests/utils/test-utils');
+import { startMockServer, stopMockServer, executeToolCall, ensureDirectoryExists } from '@tests/utils/test-utils.js';
+import { createTempTestDirectory, cleanupTempDirectory } from '../../utils/test-utils.js';
 
 // Setup test screenshot directory
-const TEST_SCREENSHOT_DIR = path.join(__dirname, '../../../test-screenshots/screenshot');
-ensureDirectoryExists(TEST_SCREENSHOT_DIR);
+const TEST_SCREENSHOT_DIR = createTempTestDirectory('screenshot-tests');
+
 
 describe('fullPageScreenshot Function', () => {
-  let server;
-  let browserId;
+  let server: any;
+  let browserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -35,12 +32,7 @@ describe('fullPageScreenshot Function', () => {
     await stopMockServer(server);
     
     // Clean up any screenshots created during testing
-    const screenshots = fs.readdirSync(TEST_SCREENSHOT_DIR);
-    screenshots.forEach(file => {
-      if (file.endsWith('.png')) {
-        fs.unlinkSync(path.join(TEST_SCREENSHOT_DIR, file));
-      }
-    });
+    cleanupTempDirectory(TEST_SCREENSHOT_DIR, ['*.png']);
   });
   
   // Setup for each test
@@ -60,7 +52,7 @@ describe('fullPageScreenshot Function', () => {
     // Close browser if one was opened
     if (browserId) {
       await executeToolCall('chrome_close_browser', { browserId });
-      browserId = null;
+      browserId = undefined;
     }
   });
   
@@ -78,14 +70,20 @@ describe('fullPageScreenshot Function', () => {
     
     // Check that screenshot is in the content
     const screenshotItem = result.content.find(
-      item => item.text && typeof item.text === 'object' && item.text.src
+      (item: any) => item.text && typeof item.text === 'object' && 'src' in item.text
     );
     
     assert.ok(screenshotItem, 'Response should include a screenshot');
-    assert.ok(
-      screenshotItem.text.src.startsWith('data:image/png;base64,'),
-      'Screenshot should be a base64-encoded PNG'
-    );
+    
+    // Type guard to ensure we have a valid screenshot item with src property
+    if (screenshotItem && typeof screenshotItem.text === 'object' && 'src' in screenshotItem.text) {
+      assert.ok(
+        screenshotItem.text.src.startsWith('data:image/png;base64,'),
+        'Screenshot should be a base64-encoded PNG'
+      );
+    } else {
+      assert.fail('Screenshot item should have text.src property');
+    }
   });
   
   it('should take a full page screenshot with custom dimensions', async () => {
@@ -99,13 +97,19 @@ describe('fullPageScreenshot Function', () => {
     
     // Check that screenshot is in the content
     const screenshotItem = result.content.find(
-      item => item.text && typeof item.text === 'object' && item.text.src
+      (item: any) => item.text && typeof item.text === 'object' && 'src' in item.text
     );
     
     assert.ok(screenshotItem, 'Response should include a screenshot');
-    assert.ok(
-      screenshotItem.text.src.startsWith('data:image/png;base64,'),
-      'Screenshot should be a base64-encoded PNG'
-    );
+    
+    // Type guard to ensure we have a valid screenshot item with src property
+    if (screenshotItem && typeof screenshotItem.text === 'object' && 'src' in screenshotItem.text) {
+      assert.ok(
+        screenshotItem.text.src.startsWith('data:image/png;base64,'),
+        'Screenshot should be a base64-encoded PNG'
+      );
+    } else {
+      assert.fail('Screenshot item should have text.src property');
+    }
   });
 });

@@ -4,21 +4,19 @@
  * Tests the functionality of connecting to an existing Chrome instance.
  */
 
+import { describe, it, before, after, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { connectToExistingBrowser } from './index.js';
-import path from 'path';
-import fs from 'fs';
+// Path and fs modules are not currently used in this test file
+// import path from 'path';
+// import fs from 'fs';
 
 // Import the test utils
-import { 
-  startMockServer, 
-  stopMockServer,
-  executeToolCall
-} from '../../../tests/utils/test-utils.js';
+import { startMockServer, stopMockServer, executeToolCall } from '@tests/utils/test-utils.js';
 
 describe('connectToExistingBrowser Function', () => {
-  let server;
-  let remoteBrowserId;
+  let server: any;
+  let remoteBrowserId: string | undefined;
   
   // Run before all tests
   before(async () => {
@@ -36,10 +34,10 @@ describe('connectToExistingBrowser Function', () => {
     if (remoteBrowserId) {
       try {
         await executeToolCall('chrome_close_browser', { browserId: remoteBrowserId });
-      } catch (error) {
+      } catch (error: any) {
         // Ignore errors on browser close during cleanup
       }
-      remoteBrowserId = null;
+      remoteBrowserId = undefined;
     }
   });
   
@@ -61,13 +59,13 @@ describe('connectToExistingBrowser Function', () => {
       
       // Check if we got a success or error response
       const successItem = result.content.find(
-        item => item.text && typeof item.text === 'string' && 
-        item.text.includes('successfully')
+        (item: any) => item.text && typeof item.text === 'string' && 
+        typeof item.text === "string" && item.text.includes('successfully')
       );
       
       const errorItem = result.content.find(
-        item => item.text && typeof item.text === 'string' && 
-        (item.text.includes('error') || item.text.includes('failed') || item.text.includes('Unable'))
+        (item: any) => item.text && typeof item.text === 'string' && 
+        (typeof item.text === "string" && item.text.includes('error') || typeof item.text === "string" && item.text.includes('failed') || typeof item.text === "string" && item.text.includes('Unable'))
       );
       
       // We expect either a successful connection (and need to store the ID)
@@ -80,7 +78,7 @@ describe('connectToExistingBrowser Function', () => {
         // If error, ensure it provides a meaningful message
         assert.ok(errorItem, 'Response should provide a meaningful error message');
       }
-    } catch (error) {
+    } catch (error: any) {
       // Even if an error is thrown directly, that's acceptable
       // as long as it's properly handled
       assert.ok(error, 'Error should be thrown if connection fails');
@@ -96,7 +94,7 @@ describe('connectToExistingBrowser Function', () => {
       
       // If it doesn't throw, check for error message in the response
       assert.fail('Should have thrown an error for invalid port');
-    } catch (error) {
+    } catch (error: any) {
       // Error is expected for invalid port
       assert.ok(error, 'Should throw an error for invalid port');
     }
@@ -108,7 +106,7 @@ describe('connectToExistingBrowser Function', () => {
       await connectToExistingBrowser({} as any); // Type assertion to bypass TypeScript check
       
       assert.fail('Should have thrown an error for missing port');
-    } catch (error) {
+    } catch (error: any) {
       // Error is expected for missing port
       assert.ok(error, 'Should throw an error for missing port');
     }

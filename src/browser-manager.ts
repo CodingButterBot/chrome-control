@@ -30,7 +30,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createLogger, LogLevel } from './utils/logger.js';
 import { 
   connectToExistingChromeInstance, 
-  detectRunningChromeInstances, 
+  // detectRunningChromeInstances - Commented out since it's currently unused
   findAvailableDebugPorts,
   getChromeProfiles,
   launchWithProfile
@@ -425,7 +425,8 @@ export class BrowserManager {
       logger.info(`Launching Chrome with user profile: ${profileName}`);
       
       // Launch Chrome with the specified profile
-      const { browser, port } = await launchWithProfile(profileName, debugPort);
+      // Note: port is returned but not used in this function
+      const { browser } = await launchWithProfile(profileName, debugPort);
       
       // Generate a unique ID for this browser instance
       const browserId = uuidv4();

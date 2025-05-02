@@ -215,7 +215,6 @@ export class McpServer {
     // This works around the "keyValidator._parse is not a function" error
     const extractedSchema = (tool.schema as any)?._def?.shape || rawSchema;
     
-    // @ts-expect-error - There are type mismatches in the SDK, but this works at runtime
     this.sdkServer.tool(
       tool.name,
       JSON.stringify(tool.options),
