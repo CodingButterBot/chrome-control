@@ -38,6 +38,21 @@ export const browserParamsSchema = basePuppeteerParamsSchema.extend({
 });
 
 /**
+ * Existing browser connection schemas
+ */
+export const existingBrowserParamsSchema = z.object({
+  port: z.number().int().positive().describe('Debug port number of the existing Chrome instance')
+});
+
+/**
+ * User profile browser schemas
+ */
+export const userProfileBrowserParamsSchema = z.object({
+  profileName: z.string().describe('Name of the Chrome user profile to use'),
+  debugPort: z.number().int().positive().optional().describe('Debug port number to use (random if not provided)')
+});
+
+/**
  * Tab management schemas
  */
 export const tabParamsSchema = basePuppeteerParamsSchema.extend({
@@ -205,8 +220,32 @@ export function registerToolsList(server: McpServer, tools: Tool<any>[]): void {
   
   // Check tools before registration
   for (const tool of tools) {
-    if (!tool || !tool.schema) {
-      console.error(`⚠️ Warning: Invalid tool definition found: ${tool?.name || 'unnamed'}`);
+    if (!tool) {
+      console.error(`⚠️ Warning: Null or undefined tool found in tools list`);
+      continue;
+    }
+    
+    if (!tool.name) {
+      console.error(`⚠️ Warning: Tool without name found, will likely cause registration issues`);
+    }
+    
+    if (!tool.schema) {
+      console.error(`⚠️ Warning: Tool '${tool?.name || 'unnamed'}' has no schema, using default empty schema`);
+      // Provide a minimal schema to prevent errors
+      tool.schema = z.object({});
+    } else if (typeof tool.schema !== 'object') {
+      console.error(`⚠️ Warning: Tool '${tool.name}' has invalid schema type (${typeof tool.schema})`);
+      // Replace with valid schema
+      tool.schema = z.object({});
+    }
+    
+    if (!tool.handler || typeof tool.handler !== 'function') {
+      console.error(`⚠️ Warning: Tool '${tool.name}' has invalid or missing handler`);
+    }
+    
+    if (!tool.options || typeof tool.options !== 'object') {
+      console.error(`⚠️ Warning: Tool '${tool.name}' has invalid or missing options`);
+      tool.options = { description: `Tool ${tool.name}` };
     }
   }
   

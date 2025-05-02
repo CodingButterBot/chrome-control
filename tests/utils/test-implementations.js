@@ -27,8 +27,8 @@ const tabs = new Map();
 export async function createBrowser(params = {}) {
   // Launch options with defaults
   const launchOptions = {
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: false, // Use visible browser for visual verification 
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,800'],
     ...params.launchOptions
   };
   
@@ -79,10 +79,20 @@ export async function createBrowser(params = {}) {
  * @returns {Promise<object>} - List of browsers
  */
 export async function listBrowsers() {
-  const browserList = Array.from(browsers.entries()).map(([id, browser]) => ({
-    id,
-    pages: browser.pages ? (await browser.pages()).length : 0
-  }));
+  // Get browser pages count safely
+  const browserList = [];
+  for (const [id, browser] of browsers.entries()) {
+    let pageCount = 0;
+    if (browser.pages) {
+      try {
+        const pages = await browser.pages();
+        pageCount = pages.length;
+      } catch (e) {
+        console.error('Error getting pages:', e);
+      }
+    }
+    browserList.push({ id, pages: pageCount });
+  }
   
   return {
     content: [

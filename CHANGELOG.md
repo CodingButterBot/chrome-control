@@ -14,8 +14,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added enhanced testing for Zod schema conversion
 
 ### Added
+- **Existing Browser Integration**: Connect to user's running Chrome instances with debug ports
+- **User Profile Support**: Launch Chrome with specific user profiles to access cookies and logins
+- **Chrome Detection**: Tools to find running Chrome instances and available user profiles
+- **Profile Management**: List and use Chrome user profiles with existing cookies and settings
+- Comprehensive documentation for existing browser connection feature
+- Example workflows for using existing Chrome instances
 - Comprehensive documentation about common Zod conversion issues and solutions
 - New error recovery mechanisms for invalid schemas
+- Documentation for MCP method name formats (slash vs. dot notation)
+- LLM simulation test that checks proper protocol formats
+- Notes about MCP SDK compatibility issues
+
+## [1.5.2] - 2025-05-02
+
+### Fixed
+- Documented the correct MCP method format (using slashes instead of dots)
+- Added MCP-METHOD-NOTES.md with detailed analysis of the issue
+- Updated API documentation with the correct JSON-RPC format for MCP
+
+### Added
+- Issue tracking for MCP SDK method name compatibility (#032)
+- Simplified test for verifying correct method formats
+- Extended API documentation with MCP protocol details
 
 ## [1.5.0] - 2025-05-02
 
@@ -85,6 +106,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error handling framework
 - Basic documentation
 
-[Unreleased]: https://github.com/CodingButterBot/chrome-control/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/CodingButterBot/chrome-control/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/CodingButterBot/chrome-control/compare/v1.5.0...v1.5.2
+[1.5.0]: https://github.com/CodingButterBot/chrome-control/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/CodingButterBot/chrome-control/compare/v0.2.0...v1.4.0
 [0.2.0]: https://github.com/CodingButterBot/chrome-control/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/CodingButterBot/chrome-control/releases/tag/v0.1.0

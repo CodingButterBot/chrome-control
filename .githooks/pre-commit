@@ -1,0 +1,106 @@
+#!/bin/sh
+#
+# Pre-commit hook for Chrome Control
+# This hook ensures that tests pass before allowing commits
+
+# Check if we're being run in a non-interactive mode (e.g. git commit --no-verify)
+if [ -z "$GIT_EXEC_PATH" ]; then
+  echo "This script is meant to be run as a git pre-commit hook."
+  exit 1
+fi
+
+echo "Running Chrome Control pre-commit hook..."
+
+# Check if there are any changes to .ts or .js files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(js|ts)$")
+if [ -z "$STAGED_FILES" ]; then
+  echo "No JavaScript or TypeScript files changed. Skipping tests."
+  exit 0
+fi
+
+# Store the current stash list
+STASH_LIST_BEFORE=$(git stash list)
+
+# Stash any changes that aren't staged yet so we don't test them
+echo "Stashing unstaged changes..."
+git stash push -q --keep-index
+
+# Run TypeScript compilation first
+echo "Running TypeScript compilation..."
+npm run build
+BUILD_STATUS=$?
+
+if [ $BUILD_STATUS -ne 0 ]; then
+  echo "❌ TypeScript compilation failed. Please fix and try again."
+  # Restore the stashed changes
+  STASH_LIST_AFTER=$(git stash list)
+  if [ "$STASH_LIST_BEFORE" != "$STASH_LIST_AFTER" ]; then
+    git stash pop -q
+  fi
+  exit 1
+fi
+
+# Run the Zod tests first since they're fast
+echo "Running Zod schema tests..."
+npm run test:zod
+ZOD_TEST_STATUS=$?
+
+# If Zod tests failed, abort
+if [ $ZOD_TEST_STATUS -ne 0 ]; then
+  echo "❌ Zod schema tests failed. Please fix and try again."
+  # Restore the stashed changes
+  STASH_LIST_AFTER=$(git stash list)
+  if [ "$STASH_LIST_BEFORE" != "$STASH_LIST_AFTER" ]; then
+    git stash pop -q
+  fi
+  exit 1
+fi
+
+# Run the unit tests
+echo "Running unit tests..."
+npm run test:unit
+UNIT_TEST_STATUS=$?
+
+# If unit tests failed, abort
+if [ $UNIT_TEST_STATUS -ne 0 ]; then
+  echo "❌ Unit tests failed. Please fix and try again."
+  # Restore the stashed changes
+  STASH_LIST_AFTER=$(git stash list)
+  if [ "$STASH_LIST_BEFORE" != "$STASH_LIST_AFTER" ]; then
+    git stash pop -q
+  fi
+  exit 1
+fi
+
+# Ask user if they want to run visual tests (which can be time-consuming)
+echo -n "Do you want to run comprehensive visual tests? (y/N): "
+read -r RUN_VISUAL_TESTS
+
+if [ "$RUN_VISUAL_TESTS" = "y" ] || [ "$RUN_VISUAL_TESTS" = "Y" ]; then
+  echo "Running comprehensive tests..."
+  npm run test:comprehensive
+  VISUAL_TEST_STATUS=$?
+  
+  if [ $VISUAL_TEST_STATUS -ne 0 ]; then
+    echo "❌ Comprehensive tests failed. Please fix and try again."
+    # Restore the stashed changes
+    STASH_LIST_AFTER=$(git stash list)
+    if [ "$STASH_LIST_BEFORE" != "$STASH_LIST_AFTER" ]; then
+      git stash pop -q
+    fi
+    exit 1
+  fi
+else
+  echo "Skipping comprehensive visual tests."
+fi
+
+# All tests passed!
+echo "✅ All tests passed. Proceeding with commit."
+
+# Restore the stashed changes
+STASH_LIST_AFTER=$(git stash list)
+if [ "$STASH_LIST_BEFORE" != "$STASH_LIST_AFTER" ]; then
+  git stash pop -q
+fi
+
+exit 0

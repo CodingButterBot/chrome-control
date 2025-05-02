@@ -52,7 +52,11 @@ import {
   mouse,
   keyboard,
   cookies,
-  chain
+  chain,
+  connectToExistingBrowser,
+  launchWithUserProfile,
+  detectExistingBrowsers,
+  listUserProfiles
 } from './puppeteer.js';
 
 // Import schemas from register.js (maintained for compatibility)
@@ -70,7 +74,9 @@ import {
   mouseParamsSchema,
   keyboardParamsSchema,
   cookieParamsSchema,
-  chainParamsSchema
+  chainParamsSchema,
+  existingBrowserParamsSchema,
+  userProfileBrowserParamsSchema
 } from './register.js';
 
 /**
@@ -96,6 +102,34 @@ export const browserManagementTools = [
     browserParamsSchema,
     async (params) => closeBrowser(params),
     { description: 'Close a browser instance' }
+  ),
+  
+  createTool(
+    'chrome_connect_existing',
+    existingBrowserParamsSchema,
+    async (params) => connectToExistingBrowser(params),
+    { description: 'Connect to an existing Chrome instance with remote debugging enabled' }
+  ),
+  
+  createTool(
+    'chrome_launch_with_profile',
+    userProfileBrowserParamsSchema,
+    async (params) => launchWithUserProfile(params),
+    { description: 'Launch Chrome with a specific user profile' }
+  ),
+  
+  createTool(
+    'chrome_detect_existing',
+    z.object({}).optional(),
+    async () => detectExistingBrowsers(),
+    { description: 'Detect running Chrome instances with debugging enabled' }
+  ),
+  
+  createTool(
+    'chrome_list_profiles',
+    z.object({}).optional(),
+    async () => listUserProfiles(),
+    { description: 'List available Chrome user profiles' }
   )
 ];
 

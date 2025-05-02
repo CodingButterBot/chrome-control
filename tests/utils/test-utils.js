@@ -102,8 +102,8 @@ export async function callTool(server, toolName, params = {}) {
  */
 export async function createTestBrowser(options = {}) {
   const defaultOptions = {
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: false, // Use visible browser for visual verification
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,800'],
     ...options
   };
   

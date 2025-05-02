@@ -133,6 +133,48 @@ async function runDemo() {
 ## Implementation Notes
 
 - [Zod Schema Conversion](zod-conversion.md) - How Zod schemas are converted for MCP compatibility
+- [MCP Protocol Methods](#mcp-protocol-methods) - Important notes about MCP method naming
+
+## MCP Protocol Methods
+
+When interacting with Chrome Control via MCP, it's important to use the correct method names. 
+
+The MCP SDK v1.10.2+ expects method names with slashes, not dots:
+
+| Method Type | Correct Format | Incorrect Format |
+|-------------|----------------|------------------|
+| Tool Call   | `tools/call`   | `tools.call`, `rpc.tools` |
+| Tool List   | `tools/list`   | `rpc.discover` |
+
+### JSON-RPC Format
+
+When sending a request, use this format:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "unique-request-id",
+  "method": "tools/call",
+  "params": {
+    "name": "chrome_create_browser",
+    "arguments": {
+      "launchOptions": {
+        "headless": false
+      }
+    }
+  }
+}
+```
+
+### Known Issues
+
+- Schema Validation: The current MCP SDK (v1.10.2) may return "keyValidator._parse is not a function" errors when validating method parameters. This is a compatibility issue that needs to be addressed in a future update.
+
+- Method Discovery: The MCP discovery mechanism (`tools/list`) might not work correctly in all environments.
+
+### Client vs. Direct STDIO
+
+- The `client.js` module abstracts away the MCP details and might use method names that differ from the raw protocol. For direct LLM integration, always use the slash format (`tools/call`) when sending requests directly via STDIO.
 
 ## Use Cases
 

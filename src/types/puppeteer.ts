@@ -64,6 +64,21 @@ export interface BrowserParams extends BasePuppeteerParams {
 }
 
 /**
+ * Parameters for connecting to existing browser
+ */
+export interface ExistingBrowserParams {
+  port: number;
+}
+
+/**
+ * Parameters for launching with user profile
+ */
+export interface UserProfileBrowserParams {
+  profileName: string;
+  debugPort?: number;
+}
+
+/**
  * Parameters for tab management
  */
 export interface TabParams extends BasePuppeteerParams {

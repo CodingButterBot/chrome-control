@@ -107,18 +107,21 @@ async function runDemo() {
 - **Screenshot Capabilities**: Capture full-page or element-specific screenshots
 - **Anti-Detection Measures**: Avoid bot detection through stealth techniques
 - **Session Persistence**: Maintain login sessions and cookies between runs
+- **Existing Browser Integration**: Connect to user's running Chrome instances with their profiles
+- **User Profile Support**: Launch Chrome with specific user profiles to access cookies and logins
 - **Action Chaining**: Execute multiple browser operations in a single request
 - **Comprehensive Logging**: Detailed logs for debugging and error tracking
 - **JavaScript Execution**: Run custom JS in the browser context
 - **Context Persistence**: Automatic tracking of browser and tab information across calls
 - **Robust Error Handling**: Better error messages and recovery mechanisms
-- **Comprehensive Test Suite**: Extensive tests covering all functionality
+- **Comprehensive Test Suite**: Extensive tests with visible browser verification
+- **MCP Protocol Compliance**: Full adherence to latest Model Context Protocol standards
 
 ## Core Tools
 
 | Category | Tools |
 |----------|-------|
-| **Browser Management** | Create, list, and close browsers |
+| **Browser Management** | Create, list, close browsers, connect to existing browsers, use user profiles |
 | **Navigation** | Navigate to URLs with custom response formats |
 | **Interaction** | Click, hover, fill forms, select options |
 | **Mouse & Keyboard** | Direct control of mouse and keyboard actions |
@@ -157,11 +160,21 @@ npm run test:all
 # Run unit tests with pretty formatting
 npm run test:units
 
+# Run comprehensive visible browser tests
+npm run test:comprehensive # All features with visual verification
+
+# Run MCP protocol compliance tests
+npm run test:mcp          # Tests actual MCP server JSON-RPC interface
+
+# Run visual verification tests with non-headless browsers
+npm run test:full-features   # Complete end-to-end test of all MCP tools
+npm run test:comprehensive   # Basic visual verification tests
+
 # Run specific test categories
-npm run test:nav          # Navigation tests
-npm run test:form         # Form interaction tests  
-npm run test:screenshot   # Screenshot and evaluation tests
-npm run test:zod          # Zod schema conversion tests
+npm run test:nav             # Navigation tests
+npm run test:form            # Form interaction tests  
+npm run test:screenshot      # Screenshot and evaluation tests
+npm run test:zod             # Zod schema conversion tests
 
 # Test MCP tools directly with the MCP testing utility
 npm run mcp:add chrome_create_browser '{}'
@@ -196,8 +209,10 @@ See our [Contributing Guide](https://github.com/CodingButterBot/chrome-control/b
 - [Example Scripts](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
 - [API Reference](https://github.com/CodingButterBot/chrome-control.wiki/API-Reference)
 - [Context Persistence](https://github.com/CodingButterBot/chrome-control/blob/main/docs/context-persistence.md)
+- [Existing Browser Connection](https://github.com/CodingButterBot/chrome-control/blob/main/docs/existing-browser-connection.md)
 - [Test Suite Documentation](https://github.com/CodingButterBot/chrome-control/blob/main/docs/testing.md)
-- [MCP Testing](https://github.com/CodingButterBot/chrome-control/wiki/tools/MCP-Testing)
+- [MCP Protocol Testing](https://github.com/CodingButterBot/chrome-control/blob/main/docs/mcp-protocol-testing.md)
+- [MCP Testing Utility](https://github.com/CodingButterBot/chrome-control/wiki/tools/MCP-Testing)
 - [Changelog](https://github.com/CodingButterBot/chrome-control/blob/main/CHANGELOG.md)
 
 ## License

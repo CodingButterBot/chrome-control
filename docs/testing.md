@@ -1,138 +1,171 @@
 # Testing Chrome Control
 
-Chrome Control includes a comprehensive test suite to ensure reliability and functionality. This document provides an overview of the testing infrastructure and how to run tests.
+This document outlines the comprehensive testing approach used in Chrome Control to ensure all MCP tools function correctly and can be reliably used by LLMs for browser automation.
 
-## Test Infrastructure
+## Testing Philosophy
 
-The test suite is organized into several categories:
+Chrome Control uses a multi-layered testing approach to ensure high quality and reliability:
 
-1. **Unit Tests**: Tests for specific functionality components
-   - Browser management (creation, listing, closing)
-   - Tab management (creation, navigation, closing)
-   - Navigation and waiting
-   - Form interactions (filling, selecting, clicking)
-   - Screenshots and JavaScript evaluation
+1. **Visual Verification** - All tests use non-headless browsers to allow visual inspection of automation actions
+2. **Comprehensive Coverage** - Every MCP tool is tested with real-world scenarios
+3. **Validation at Multiple Levels** - From low-level unit tests to end-to-end integration tests
+4. **Automated Pre-commit Checks** - Tests must pass before code can be committed
+5. **Schema Validation Tests** - Ensure MCP tool parameters are properly validated
 
-2. **Integration Tests**: Tests that ensure components work together properly
-   - MCP server functionality
-   - Client-server communication
+## Test Types
 
-3. **Compatibility Tests**: Ensuring Chrome Control works across environments
-   - Zod schema conversion tests
-   - MCP protocol compatibility
+### 1. LLM Simulation Tests
 
-## Test Runner
-
-A custom test runner is provided that executes all tests and generates a formatted report with:
-- Test status (passed/failed)
-- Execution time
-- Detailed failure information
-
-## Running Tests
-
-### Basic Test Commands
+These tests simulate exactly how an LLM would interact with Chrome Control via STDIO and JSON-RPC, providing the most realistic test scenario:
 
 ```bash
-# Run all tests
-npm test
-
-# Run all unit tests with pretty formatting
-npm run test:units
-
-# Run individual test categories
-npm run test:simple       # Basic browser functionality
-npm run test:nav          # Navigation tests
-npm run test:form         # Form interaction tests
-npm run test:screenshot   # Screenshot and evaluation tests
-npm run test:zod          # Zod schema conversion tests
-
-# Run legacy test format
-npm run test:unit         # Run old unit tests
+npm run test:llm-simulation
 ```
 
-### Advanced Test Options
+Key characteristics:
+- Uses the real STDIO interface that LLMs use
+- Sends proper JSON-RPC requests following MCP protocol
+- Reuses a single browser for efficiency
+- Includes timeouts to prevent test hangs
+- Creates screenshots for visual validation
+- Tests core functionality an LLM would use
 
-For development and debugging, you can run tests sequentially:
+### 2. Full Feature Tests
+
+These tests verify all Chrome Control MCP tools with visual browser interaction, providing comprehensive coverage of the entire feature set.
 
 ```bash
-npm run test:units:sequential
+npm run test:full-features
 ```
 
-## Writing Tests
+Key characteristics:
+- Tests every MCP tool with realistic user scenarios
+- Uses visible browsers for visual verification
+- Creates screenshots for visual validation
+- Includes complex interactions like form filling, keyboard input, and cookie management
 
-When adding new functionality to Chrome Control, please also add corresponding tests. Tests should be placed in the appropriate category folder:
+### 3. Comprehensive Tests
 
-- Basic functionality tests go in `tests/units/`
-- Browser management tests go in `tests/units/browser/`
-- Tab and navigation tests go in `tests/units/navigation/`
-- Interaction tests go in `tests/units/interaction/`
+These tests focus on the core browser management and navigation functionality with visual verification.
 
-### Test Template
-
-```javascript
-/**
- * Test template for Chrome Control
- */
-
-import puppeteer from 'puppeteer';
-
-// Set up tests
-async function runTests() {
-  let browser;
-  
-  try {
-    console.log('Starting test...');
-    
-    // Launch browser
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    console.log('✅ Browser launched');
-    
-    // Your test code here
-    
-    // All tests passed
-    console.log('\nAll tests passed!');
-    return true;
-  } catch (error) {
-    console.error('❌ Test failed:', error);
-    return false;
-  } finally {
-    // Clean up
-    if (browser) {
-      await browser.close();
-    }
-  }
-}
-
-// Run the test
-console.log('Running test...');
-runTests()
-  .then(success => {
-    if (success) {
-      console.log('Test passed!');
-      process.exit(0);
-    } else {
-      console.error('Test failed!');
-      process.exit(1);
-    }
-  })
-  .catch(error => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-  });
+```bash
+npm run test:comprehensive
 ```
+
+Key characteristics:
+- Verifies browser and tab management
+- Tests basic navigation and interaction
+- Uses visible browsers
+- Provides a faster subset of full feature tests
+
+### 4. MCP Protocol Tests
+
+These tests validate the integration with the Model Context Protocol (MCP) server interface.
+
+```bash
+npm run test:mcp
+```
+
+Key characteristics:
+- Tests the actual JSON-RPC protocol interface
+- Verifies correct MCP request and response formats
+- Ensures proper tool registration and discovery
+
+### 5. Schema Validation Tests
+
+These tests ensure that Zod schemas are correctly converted to JSON Schema for MCP tools.
+
+```bash
+npm run test:zod
+```
+
+Key characteristics:
+- Tests schema conversion edge cases
+- Verifies handling of null/undefined schemas
+- Tests circular references and complex schema structures
+
+### 6. Unit Tests
+
+These tests verify individual components and tools in isolation.
+
+```bash
+npm run test:unit
+```
+
+Key characteristics:
+- Tests browser management functionality
+- Tests tab management functionality
+- Tests navigation and waiting functionality
+
+## Screenshot Verification
+
+All visual tests save screenshots to the `test-screenshots/` directory for manual verification. These are organized by test category:
+
+- `llm-simulation/` - LLM interface simulation tests
+- `browser/` - Browser management tests
+- `tabs/` - Tab management tests
+- `navigation/` - Navigation tests
+- `interaction/` - User interaction tests (click, hover, etc.)
+- `forms/` - Form filling tests
+- `cookies/` - Cookie management tests
+- `evaluation/` - JavaScript evaluation tests
+- `chaining/` - Action chaining tests
+
+## Automated Testing with Pre-commit Hooks
+
+Chrome Control requires tests to pass before code can be committed. This is enforced through pre-commit hooks:
+
+```bash
+npm run precommit
+```
+
+This runs:
+1. TypeScript compilation (`npm run build`)
+2. All tests (`npm run test:all`)
+
+## Running All Tests
+
+To run the complete test suite:
+
+```bash
+npm run test:all
+```
+
+This will:
+1. Run Zod schema validation tests (fast and reliable)
+2. Run LLM simulation tests (complete end-to-end through STDIO interface)
+
+These tests provide the best balance of speed, reliability, and coverage while using a single browser window to avoid redundant tabs and windows.
 
 ## Continuous Integration
 
-Tests are automatically run on pull requests and before releases to ensure code quality and functionality. The test suite is designed to run in CI environments with minimal setup.
+In a CI/CD environment, the tests can be run with the headless flag set to true for non-visual testing. However, for development, we use non-headless browsers to allow visual verification of the automation process.
 
-## Reporting Issues
+## Adding New Tests
 
-If you find a failing test or want to suggest improvements to the test suite, please [open an issue](https://github.com/CodingButterBot/chrome-control/issues) with the following information:
+When adding new features to Chrome Control:
 
-1. The specific test that's failing
-2. Your environment details (OS, Node.js version)
-3. Steps to reproduce
-4. Any error messages or screenshots
+1. Add unit tests for the new functionality
+2. Add visual verification tests in `mcp-full-feature-test.js`
+3. Update schema tests if new tool parameters are added
+4. Ensure all tests pass before committing changes
+
+## Test HTTP Server
+
+The tests use a local HTTP server to host test pages. This server provides pages for testing various features:
+
+- Main test page with click, hover, and keyboard interactions
+- Forms test page with various input types
+- Cookies test page for cookie management
+- Dynamic content page for testing waiting and asynchronous content
+
+## Testing Philosophy for LLM Integration
+
+Since Chrome Control is designed for use by Large Language Models (LLMs), our testing approach focuses on ensuring that:
+
+1. All tools work as expected in typical LLM usage scenarios
+2. Responses are structured appropriately for LLM consumption
+3. Tools handle edge cases and errors gracefully
+4. Visual verification allows human review of automation behavior
+
+By maintaining this comprehensive testing approach, we ensure that Chrome Control remains a reliable and robust solution for browser automation with LLMs.

@@ -39,7 +39,9 @@ import {
   MouseParams,
   WaitParams,
   CookieParams,
-  ChromeToolResponse
+  ChromeToolResponse,
+  ExistingBrowserParams,
+  UserProfileBrowserParams
 } from './types/puppeteer.js';
 import { browserManager, COMMAND_TIMEOUT, DEFAULT_LAUNCH_OPTIONS } from './browser-manager.js';
 
@@ -1306,6 +1308,218 @@ export async function evaluate(params: EvaluateParams): Promise<ChromeToolRespon
     ];
     
     return await createResponse(content, params.browserId, params.tabId);
+  }
+}
+
+/**
+ * Connect to an existing Chrome instance
+ * 
+ * Connects to an already running Chrome browser instance that has remote debugging
+ * enabled. This allows Chrome Control to interact with a user's existing browser
+ * session, including access to the user's cookies, login sessions, and open tabs.
+ * 
+ * @param params - Parameters for connecting to the existing browser
+ * @param params.port - Debug port number the Chrome instance is running on
+ * @returns Promise resolving to a response with connection information
+ * 
+ * @example
+ * ```typescript
+ * // Connect to Chrome running with --remote-debugging-port=9222
+ * const response = await connectToExistingBrowser({
+ *   port: 9222
+ * });
+ * ```
+ */
+export async function connectToExistingBrowser(params: ExistingBrowserParams): Promise<ChromeToolResponse> {
+  try {
+    const port = params.port;
+    console.log(`Connecting to existing Chrome instance on port ${port}`);
+    
+    // Connect to the browser
+    const browserId = await browserManager.connectToExistingBrowser(port);
+    
+    const content = [
+      { type: 'text', text: `Successfully connected to existing Chrome browser on port ${port}` },
+      { type: 'text', text: `Browser ID: ${browserId}` }
+    ];
+    
+    return await createResponse(content, browserId);
+  } catch (error) {
+    console.error('Error connecting to existing browser:', error);
+    const content = [
+      { type: 'text', text: 'Error connecting to existing browser:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content);
+  }
+}
+
+/**
+ * Launch Chrome with a specific user profile
+ * 
+ * Launches a new Chrome browser using an existing user profile, which includes
+ * the user's cookies, bookmarks, extensions, saved passwords, and other settings.
+ * This allows automation to use the user's existing logged-in state.
+ * 
+ * @param params - Parameters for launching with a user profile
+ * @param params.profileName - Name of the Chrome profile to use
+ * @param params.debugPort - Optional port to use for remote debugging
+ * @returns Promise resolving to a response with browser information
+ * 
+ * @example
+ * ```typescript
+ * // Launch Chrome with the default user profile
+ * const response = await launchWithUserProfile({
+ *   profileName: 'Default'
+ * });
+ * 
+ * // Launch Chrome with a specific profile
+ * const response = await launchWithUserProfile({
+ *   profileName: 'Profile 1',
+ *   debugPort: 9223
+ * });
+ * ```
+ */
+export async function launchWithUserProfile(params: UserProfileBrowserParams): Promise<ChromeToolResponse> {
+  try {
+    console.log(`Launching Chrome with user profile: ${params.profileName}`);
+    
+    // Launch Chrome with the user profile
+    const browserId = await browserManager.launchWithUserProfile(params.profileName, params.debugPort);
+    
+    const content = [
+      { type: 'text', text: `Successfully launched Chrome with user profile: ${params.profileName}` },
+      { type: 'text', text: `Browser ID: ${browserId}` }
+    ];
+    
+    return await createResponse(content, browserId);
+  } catch (error) {
+    console.error('Error launching Chrome with user profile:', error);
+    const content = [
+      { type: 'text', text: 'Error launching Chrome with user profile:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content);
+  }
+}
+
+/**
+ * Detect available existing Chrome instances
+ * 
+ * Scans the system for running Chrome processes that have remote debugging
+ * enabled and returns a list of available debug ports. This is useful for
+ * finding Chrome instances that can be connected to without launching a new one.
+ * 
+ * @returns Promise resolving to a response with information about available Chrome instances
+ * 
+ * @example
+ * ```typescript
+ * // Find available Chrome instances
+ * const response = await detectExistingBrowsers();
+ * console.log(response.content); // Array of text items with debug port information
+ * ```
+ */
+export async function detectExistingBrowsers(): Promise<ChromeToolResponse> {
+  try {
+    console.log('Detecting existing Chrome instances');
+    
+    // Find available debug ports
+    const debugPorts = await browserManager.detectExistingBrowsers();
+    
+    const content = [
+      { type: 'text', text: `Found ${debugPorts.length} Chrome instances with debugging enabled` }
+    ];
+    
+    if (debugPorts.length > 0) {
+      debugPorts.forEach(({ port, pid }) => {
+        content.push({ type: 'text', text: `PID: ${pid}, Debug Port: ${port}` });
+      });
+      
+      content.push({ 
+        type: 'text', 
+        text: `To connect to a specific instance, use chrome_connect_existing with port parameter` 
+      });
+    } else {
+      content.push({ 
+        type: 'text', 
+        text: `No Chrome instances with debugging enabled found. Start Chrome with --remote-debugging-port flag` 
+      });
+    }
+    
+    return await createResponse(content);
+  } catch (error) {
+    console.error('Error detecting existing browsers:', error);
+    const content = [
+      { type: 'text', text: 'Error detecting existing browsers:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content);
+  }
+}
+
+/**
+ * List available Chrome user profiles
+ * 
+ * Detects all Chrome user profiles available on the system, including their
+ * names, paths, active status, and last used time. This is useful for
+ * choosing a profile to launch Chrome with.
+ * 
+ * @returns Promise resolving to a response with information about available Chrome profiles
+ * 
+ * @example
+ * ```typescript
+ * // List available user profiles
+ * const response = await listUserProfiles();
+ * console.log(response.content); // Array of text items with profile information
+ * ```
+ */
+export async function listUserProfiles(): Promise<ChromeToolResponse> {
+  try {
+    console.log('Listing available Chrome user profiles');
+    
+    // Get available user profiles
+    const profiles = await browserManager.getAvailableUserProfiles();
+    
+    const content = [
+      { type: 'text', text: `Found ${profiles.length} Chrome user profiles` }
+    ];
+    
+    if (profiles.length > 0) {
+      profiles.forEach(profile => {
+        const status = profile.isActive ? '[ACTIVE]' : '[INACTIVE]';
+        const lastUsed = profile.lastUsed 
+          ? `Last used: ${profile.lastUsed.toISOString()}` 
+          : 'Last used: Unknown';
+        
+        content.push({ 
+          type: 'text', 
+          text: `${status} Name: ${profile.name}, ${lastUsed}` 
+        });
+      });
+      
+      content.push({ 
+        type: 'text', 
+        text: `To launch Chrome with a specific profile, use chrome_launch_user_profile with profileName parameter` 
+      });
+    } else {
+      content.push({ 
+        type: 'text', 
+        text: `No Chrome user profiles found` 
+      });
+    }
+    
+    return await createResponse(content);
+  } catch (error) {
+    console.error('Error listing user profiles:', error);
+    const content = [
+      { type: 'text', text: 'Error listing user profiles:' },
+      { type: 'text', text: (error as Error)?.message || String(error) }
+    ];
+    
+    return await createResponse(content);
   }
 }
 
