@@ -30,8 +30,8 @@
     },
     "chrome": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["mcp-chrome-control"],
+      "command": "node",
+      "args": ["bin/direct-index.js"],
       "env": {}
     }
   }
