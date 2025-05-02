@@ -29,7 +29,7 @@ export async function controlKeyboardType(params: KeyboardTypeParams): Promise<C
   
   // Convert the simplified typing parameters to the full keyboard parameters
   const keyboardParams = {
-    action: 'type' as 'type', // Type assertion to match the enum
+    action: 'type' as const, // Use const assertion instead of literal type assertion
     text: params.text,
     delay: params.delay,
     browserId: params.browserId,

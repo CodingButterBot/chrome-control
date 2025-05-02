@@ -39,7 +39,7 @@ child.on('exit', (code, signal) => {
 ['SIGINT', 'SIGTERM'].forEach(signal => {
   process.on(signal, () => {
     if (!child.killed) {
-      // @ts-ignore - NodeJS.Signals type is being difficult
+      // @ts-expect-error - NodeJS.Signals type is being difficult
       child.kill(signal);
     }
   });
