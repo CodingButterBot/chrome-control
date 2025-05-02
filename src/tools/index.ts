@@ -1,28 +1,74 @@
 /**
- * Chrome Control Tools
+ * Chrome Control Tools Index
  * 
- * Main entry point for all Chrome Control tools. This file imports and re-exports
- * tools from each category for use in the main application.
+ * This file imports and exports all tools from their individual directories.
+ * It provides a central point for registering all tools with the MCP server.
  */
 
 import { McpServer } from '../mcp-server.js';
+import { Tool } from '../types/tool.js';
 
-// Import tool collections from each category
-import { browserTools } from './browser/index.js';
-import { tabTools } from './tab/index.js';
-import { navigationTools } from './navigation/index.js';
-import { screenshotTools } from './screenshot/index.js';
-import { mouseTools } from './mouse/index.js';
-import { keyboardTools } from './keyboard/index.js';
-import { formTools } from './form/index.js';
-import { cookieTools } from './cookie/index.js';
-import { scriptTools } from './script/index.js';
-import { chainTools } from './chain/index.js';
+// Import all tools from their individual folders
+import { createBrowserTool } from './browser-create/index.js';
+import { listBrowsersTool } from './browser-list/index.js';
+import { closeBrowserTool } from './browser-close/index.js';
+import { createTabTool } from './tab-create/index.js';
+import { navigateTool } from './navigation-navigate/index.js';
+import { screenshotTool } from './screenshot/index.js';
+import { clickTool } from './mouse-click/index.js';
+import { keyboardTool } from './keyboard-type/index.js';
+import { formSubmitTool } from './form-submit/index.js';
+import { cookieTool } from './cookie-manage/index.js';
+import { scriptExecuteTool } from './script-execute/index.js';
+import { chainActionsTool } from './chain-actions/index.js';
+
+// Group tools by category for organization
+const browserTools = [
+  createBrowserTool,
+  listBrowsersTool,
+  closeBrowserTool
+];
+
+const tabTools = [
+  createTabTool
+];
+
+const navigationTools = [
+  navigateTool
+];
+
+const screenshotTools = [
+  screenshotTool
+];
+
+const mouseTools = [
+  clickTool
+];
+
+const keyboardTools = [
+  keyboardTool
+];
+
+const formTools = [
+  formSubmitTool
+];
+
+const cookieTools = [
+  cookieTool
+];
+
+const scriptTools = [
+  scriptExecuteTool
+];
+
+const chainTools = [
+  chainActionsTool
+];
 
 /**
  * All Chrome Control tools
  */
-export const allTools = [
+export const allTools: Tool<any>[] = [
   ...browserTools,
   ...tabTools,
   ...navigationTools,

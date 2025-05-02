@@ -1,12 +1,12 @@
 /**
- * Create Browser Tool
+ * Browser Create Tool
  * 
  * Tool for creating a new browser instance with custom configuration options.
  */
 
-import { createTool } from '../../../mcp-server.js';
-import { BrowserParams, ChromeToolResponse } from '../../../types/puppeteer.js';
-import { browserParamsSchema } from '../../../register.js';
+import { createTool } from '../../mcp-server.js';
+import { BrowserParams, ChromeToolResponse } from '../../types/puppeteer.js';
+import { browserParamsSchema } from '../../register.js';
 
 /**
  * Creates a new browser instance
@@ -24,8 +24,31 @@ export async function createBrowser(params: BrowserParams): Promise<ChromeToolRe
   // This is just a temporary implementation that forwards to the original function
   // We would import the real implementation from puppeteer.js
   // Eventually, we'll move the implementation here
-  const { createBrowser: origCreateBrowser } = await import('../../../puppeteer.js');
+  const { createBrowser: origCreateBrowser } = await import('../../puppeteer.js');
   return await origCreateBrowser(params);
+}
+
+/**
+ * Creates a browser with specific viewport settings
+ * 
+ * Specialized function for creating a browser with custom viewport dimensions.
+ * This is a convenience wrapper around createBrowser that sets specific viewport options.
+ * 
+ * @param width - Viewport width in pixels
+ * @param height - Viewport height in pixels
+ * @param params - Additional browser parameters
+ */
+export async function createBrowserWithViewport(
+  width: number,
+  height: number,
+  params: Omit<BrowserParams, 'launchOptions'> = {}
+): Promise<ChromeToolResponse> {
+  return createBrowser({
+    ...params,
+    launchOptions: {
+      defaultViewport: { width, height }
+    }
+  });
 }
 
 // Create and export the tool
