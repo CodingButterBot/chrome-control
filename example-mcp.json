@@ -1,8 +1,0 @@
-{
-  "chrome": {
-    "type": "stdio",
-    "command": "mcp-chrome-control",
-    "args": [],
-    "env": {}
-  }
-}
