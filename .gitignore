@@ -58,6 +58,7 @@ tests/user-data-dir/
 /.mcp.json.tmp
 
 # Screenshots and temporary files
+# Ignore image files and other media
 *.png
 *.jpg
 *.jpeg
@@ -66,3 +67,8 @@ tests/user-data-dir/
 *.webm
 *.pdf
 /tmp/
+
+# Make exceptions for documentation images
+!docs/images/*.png
+!docs/images/*.jpg
+!docs/images/*.svg
