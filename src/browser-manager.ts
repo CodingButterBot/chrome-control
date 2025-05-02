@@ -1,3 +1,25 @@
+/**
+ * Browser Manager
+ * 
+ * This module provides a centralized system for managing Chrome browser instances
+ * and their associated tabs/pages. It handles browser lifecycle (creation, tracking,
+ * and termination) and provides a clean API for the rest of the application to
+ * interact with browser instances.
+ * 
+ * The BrowserManager implements several key features:
+ * - Browser instance tracking with unique IDs
+ * - Tab/page management within browsers
+ * - Stealth mode to avoid bot detection
+ * - Default browser instance for simplified operations
+ * - Configuration for headless/visible mode
+ * - Browser resource cleanup
+ * 
+ * This manager is designed to support both ephemeral and persistent browser sessions,
+ * with the latter being useful for maintaining login state and cookies between runs.
+ * 
+ * @module browser-manager
+ */
+
 // This import is required to ensure type definitions
 import 'puppeteer';
 import puppeteerExtra from 'puppeteer-extra';
@@ -56,6 +78,41 @@ interface BrowserContext {
 // Create a logger instance for browser-manager
 const logger = createLogger('browser-manager');
 
+/**
+ * Manages browser instances and their associated tabs/pages
+ * 
+ * This singleton class provides a centralized system for creating, tracking, and
+ * managing Chrome browser instances and their tabs. It's the core component that
+ * enables multi-browser and multi-tab support in Chrome Control.
+ * 
+ * Key features:
+ * - Browser lifecycle management (creation, tracking, termination)
+ * - Tab/page management within browser instances
+ * - Default browser for simplified operations
+ * - Browser and page information retrieval
+ * - Resource cleanup
+ * 
+ * The manager is designed with both single-browser scenarios and multi-browser
+ * environments in mind, making it flexible for various use cases from simple
+ * automation to complex multi-session browser control.
+ * 
+ * @example
+ * ```typescript
+ * // Get the browser manager instance
+ * const manager = BrowserManager.getInstance();
+ * 
+ * // Launch a new browser
+ * const browserId = await manager.launchBrowser();
+ * 
+ * // Create a new page in that browser
+ * const { pageId } = await manager.createPage(browserId);
+ * 
+ * // Use the browser and page for operations...
+ * 
+ * // Clean up resources when done
+ * await manager.closeBrowser(browserId);
+ * ```
+ */
 export class BrowserManager {
   private static instance: BrowserManager;
   private browsers: Map<string, BrowserContext> = new Map();
@@ -77,7 +134,35 @@ export class BrowserManager {
   }
 
   /**
-   * Launch a new browser instance and track it
+   * Launches a new browser instance and tracks it in the manager
+   * 
+   * This method creates a new Chrome browser instance with specified options,
+   * initializes it with stealth features to avoid bot detection, creates an
+   * initial page, and registers the browser for tracking. If this is the first
+   * browser created, it becomes the default browser.
+   * 
+   * The browser is launched using puppeteer-extra with stealth plugins enabled,
+   * which helps avoid detection by anti-bot systems on modern websites. Each
+   * browser gets a unique ID for tracking, and an initial page is created or
+   * reused.
+   * 
+   * @param options - Launch options for the browser (defaults to DEFAULT_LAUNCH_OPTIONS)
+   * @returns Promise resolving to the unique ID assigned to the browser
+   * 
+   * @example
+   * ```typescript
+   * // Launch with default options (windowed mode)
+   * const browserId = await manager.launchBrowser();
+   * 
+   * // Launch with custom options
+   * const browserId = await manager.launchBrowser({
+   *   headless: true,
+   *   userDataDir: './user_data', // For persistence
+   *   defaultViewport: { width: 1920, height: 1080 }
+   * });
+   * ```
+   * 
+   * @throws Error if the browser cannot be launched
    */
   public async launchBrowser(options = DEFAULT_LAUNCH_OPTIONS): Promise<string> {
     const timer = logger.startTimer('launchBrowser');
@@ -221,7 +306,37 @@ export class BrowserManager {
   }
 
   /**
-   * Get a page by ID or the default page for a browser
+   * Gets a page by ID or the default page for a browser
+   * 
+   * This method retrieves a page (tab) by its ID, falling back to the default page
+   * for the specified browser if no page ID is provided. If neither a page ID nor
+   * a browser ID is provided, it uses the default browser's default page.
+   * 
+   * If the requested page no longer exists but a default page was requested, a new
+   * page will be created automatically to ensure operations can continue. This
+   * self-healing behavior prevents errors when pages have been closed unexpectedly.
+   * 
+   * This method is the primary way for other components to access browser pages for
+   * performing operations like navigation, clicking, etc. It ensures the browser
+   * context is always updated with the latest usage timestamp.
+   * 
+   * @param pageId - Optional ID of the specific page to retrieve
+   * @param browserId - Optional ID of the browser containing the page
+   * @returns Promise resolving to an object containing browserId, pageId, and page instance
+   * 
+   * @example
+   * ```typescript
+   * // Get the default page of the default browser
+   * const { page } = await manager.getPage();
+   * 
+   * // Get a specific page in a specific browser
+   * const { page } = await manager.getPage('page-123', 'browser-456');
+   * 
+   * // Get the default page of a specific browser
+   * const { page } = await manager.getPage(undefined, 'browser-456');
+   * ```
+   * 
+   * @throws Error if the specified browser is not found
    */
   public async getPage(pageId?: string, browserId?: string): Promise<{ browserId: string, pageId: string, page: Page }> {
     // Get browser

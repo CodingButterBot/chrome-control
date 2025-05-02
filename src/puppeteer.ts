@@ -1,3 +1,29 @@
+/**
+ * Puppeteer Core Functions
+ * 
+ * This module implements the core browser automation functionality using Puppeteer.
+ * It provides a comprehensive set of functions for browser control, page navigation,
+ * interaction with elements, and data extraction. These functions serve as the 
+ * underlying implementation for the Chrome Control tools exposed through MCP.
+ * 
+ * The module is organized into several categories:
+ * - Browser management (create, list, close browsers)
+ * - Tab management (create, list, close tabs)
+ * - Navigation (navigate to URLs, wait for events)
+ * - Interaction (click, fill, select, hover)
+ * - Input control (keyboard, mouse)
+ * - Data extraction (screenshot, evaluate)
+ * - State management (cookies)
+ * - Action chaining (combining multiple actions)
+ * 
+ * Each function follows a consistent pattern:
+ * 1. Accept parameters with proper typing
+ * 2. Perform the requested browser automation task
+ * 3. Return a standardized response with context information
+ * 
+ * @module puppeteer
+ */
+
 import { KeyInput } from 'puppeteer';
 import { 
   NavigateParams, 
@@ -105,7 +131,30 @@ async function createResponse(
 }
 
 /**
- * Browser management commands
+ * Creates a new browser instance
+ * 
+ * Launches a new Chromium browser instance with the specified configuration options.
+ * By default, browsers are launched in windowed mode (not headless) for user visibility,
+ * but this can be customized through the launchOptions parameter.
+ * 
+ * @param params - Browser creation parameters
+ * @param params.browserId - Optional ID to assign to the browser (generated if not provided)
+ * @param params.launchOptions - Optional Puppeteer launch options to customize the browser
+ * @returns Promise resolving to a response with browser information
+ * 
+ * @example
+ * ```typescript
+ * // Create a browser with default settings
+ * const response = await createBrowser({});
+ * 
+ * // Create a browser with custom options
+ * const response = await createBrowser({
+ *   launchOptions: {
+ *     headless: true,
+ *     args: ['--no-sandbox', '--disable-setuid-sandbox']
+ *   }
+ * });
+ * ```
  */
 export async function createBrowser(params: BrowserParams): Promise<ChromeToolResponse> {
   try {
@@ -133,6 +182,21 @@ export async function createBrowser(params: BrowserParams): Promise<ChromeToolRe
   }
 }
 
+/**
+ * Lists all available browser instances
+ * 
+ * Returns information about all currently running browser instances managed by Chrome Control.
+ * This includes their IDs, page counts, creation times, and last usage times.
+ * 
+ * @returns Promise resolving to a response with browser list information
+ * 
+ * @example
+ * ```typescript
+ * // Get a list of all running browsers
+ * const response = await listBrowsers();
+ * console.log(response.content); // Array of text items with browser information
+ * ```
+ */
 export async function listBrowsers(): Promise<ChromeToolResponse> {
   try {
     const browsers = browserManager.listBrowsers();
@@ -288,25 +352,103 @@ export async function closeTab(params: TabParams): Promise<ChromeToolResponse> {
 /**
  * Navigation commands
  */
-export async function navigate(params: NavigateParams): Promise<ChromeToolResponse> {
+/**
+ * Navigates to a specified URL in a browser tab
+ * 
+ * This is one of the core functions of Chrome Control. It navigates a browser tab to the specified URL
+ * and can return different types of information about the resulting page based on the responseType parameter.
+ * This function supports response customization to optimize for token efficiency with LLMs.
+ * 
+ * @param params - Navigation parameters or URL string
+ * @param params.url - The URL to navigate to
+ * @param params.browserId - Optional browser ID to use (default is used if not provided)
+ * @param params.tabId - Optional tab ID to use (first tab is used if not provided)
+ * @param params.waitUntil - Optional page load state to wait for (defaults to 'networkidle0')
+ * @param params.timeout - Optional timeout in milliseconds (defaults to global timeout)
+ * @param params.responseType - Optional response format type:
+ *   - 'full': Full page HTML (default if not specified)
+ *   - 'text': Only text content
+ *   - 'links': Only links on the page
+ *   - 'inputs': Only input fields
+ *   - 'jsonld': JSON-LD structured data if available
+ *   - 'custom': Filtered by CSS selectors provided in responseOptions
+ * @param params.responseOptions - Optional additional options for customizing the response
+ * @returns Promise resolving to a response with page information
+ * 
+ * @example
+ * ```typescript
+ * // Navigate to a URL with default settings
+ * const response = await navigate('https://example.com');
+ * 
+ * // Navigate with custom response format
+ * const response = await navigate({
+ *   url: 'https://example.com',
+ *   responseType: 'text',
+ *   waitUntil: 'domcontentloaded',
+ *   timeout: 30000
+ * });
+ * 
+ * // Navigate and get only links
+ * const response = await navigate({
+ *   url: 'https://example.com',
+ *   responseType: 'links'
+ * });
+ * ```
+ */
+export async function navigate(params: NavigateParams | string): Promise<ChromeToolResponse> {
   try {
-    // Get page
-    const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
+    // Handle both object and string formats for params
+    let url: string;
+    let browserId: string | undefined;
+    let tabId: string | undefined;
+    let waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2' | undefined;
+    let timeout: number | undefined;
+    let responseFormat: any;
     
-    console.log(`Navigating to: ${params.url}`);
-    await page.goto(params.url, { 
-      waitUntil: params.waitUntil || 'networkidle2', 
-      timeout: params.timeout || COMMAND_TIMEOUT 
+    // Parse parameters based on input type
+    if (typeof params === 'string') {
+      // If params is just a string, use it as URL
+      url = params;
+      browserId = undefined;
+      tabId = undefined;
+      waitUntil = 'networkidle2';
+      timeout = COMMAND_TIMEOUT;
+      responseFormat = { pageTitle: true };
+      console.log(`[NAVIGATE] Using string URL: ${url}`);
+    } else if (typeof params === 'object') {
+      // Regular object parameter format
+      if (!params.url) {
+        throw new Error('URL parameter is required for navigation');
+      }
+      url = String(params.url);
+      browserId = params.browserId;
+      tabId = params.tabId;
+      waitUntil = params.waitUntil;
+      timeout = params.timeout || COMMAND_TIMEOUT;
+      responseFormat = params.responseFormat;
+      console.log(`[NAVIGATE] Using object params with URL: ${url}`);
+    } else {
+      throw new Error('Invalid navigation parameters format');
+    }
+    
+    // Get page - this will throw an error if browser/tab doesn't exist
+    const { browserId: resolvedBrowserId, pageId: resolvedPageId, page } = await browserManager.getPage(tabId, browserId);
+    
+    console.log(`Navigating to: ${url}`);
+    
+    await page.goto(url, { 
+      waitUntil: waitUntil || 'networkidle2', 
+      timeout: timeout || COMMAND_TIMEOUT 
     });
     
     // Default content response
     const content: Array<{ type: string; text: string | { src: string; alt: string } }> = [
-      { type: 'text', text: `Successfully navigated to ${params.url}` }
+      { type: 'text', text: `Successfully navigated to ${url}` }
     ];
     
     // Handle custom response format if provided
-    if (params.responseFormat) {
-      const format = params.responseFormat;
+    if (responseFormat) {
+      const format = responseFormat;
       
       // Include page title
       if (format.pageTitle !== false) { // Default to true
@@ -375,7 +517,7 @@ export async function navigate(params: NavigateParams): Promise<ChromeToolRespon
             // Filter by attribute values
             if (filter.attributeFilter && Array.isArray(filter.attributeFilter) && filter.attributeFilter.length > 0) {
               filteredElements = filteredElements.filter(el => {
-                return filter.attributeFilter!.some(attrFilter => {
+                return filter.attributeFilter!.some((attrFilter: {name: string, value: string, partial?: boolean}) => {
                   const attrValue = (el as HTMLElement).getAttribute(attrFilter.name);
                   if (!attrValue) return false;
                   
@@ -398,7 +540,7 @@ export async function navigate(params: NavigateParams): Promise<ChromeToolRespon
             // Include attributes if requested
             if (options.attributes && options.attributes.length > 0) {
               data.attributes = {};
-              options.attributes.forEach(attr => {
+              options.attributes.forEach((attr: string) => {
                 data.attributes[attr] = (el as HTMLElement).getAttribute(attr);
               });
             }
@@ -459,7 +601,7 @@ export async function navigate(params: NavigateParams): Promise<ChromeToolRespon
             // Filter by attribute values (href is treated as a special case for links)
             if (filter.attributeFilter && Array.isArray(filter.attributeFilter) && filter.attributeFilter.length > 0) {
               allLinks = allLinks.filter(link => {
-                return filter.attributeFilter && filter.attributeFilter.some(attrFilter => {
+                return filter.attributeFilter && filter.attributeFilter.some((attrFilter: {name: string, value: string, partial?: boolean}) => {
                   if (attrFilter.name === 'href') {
                     return attrFilter.partial 
                       ? link.href.includes(attrFilter.value)
@@ -539,7 +681,7 @@ export async function navigate(params: NavigateParams): Promise<ChromeToolRespon
             // Filter by attribute values
             if (filter.attributeFilter && Array.isArray(filter.attributeFilter) && filter.attributeFilter.length > 0) {
               allInputs = allInputs.filter(input => {
-                return filter.attributeFilter!.some(attrFilter => {
+                return filter.attributeFilter!.some((attrFilter: {name: string, value: string, partial?: boolean}) => {
                   // Special cases for common input attributes
                   if (attrFilter.name === 'id' && input.id) {
                     return attrFilter.partial 
@@ -584,7 +726,7 @@ export async function navigate(params: NavigateParams): Promise<ChromeToolRespon
       }
     }
     
-    return await createResponse(content, browserId, pageId);
+    return await createResponse(content, resolvedBrowserId, resolvedPageId);
   } catch (error) {
     console.error('Error navigating:', error);
     const content = [
@@ -592,7 +734,11 @@ export async function navigate(params: NavigateParams): Promise<ChromeToolRespon
       { type: 'text', text: (error as Error)?.message || String(error) }
     ];
     
-    return await createResponse(content, params.browserId, params.tabId);
+    // Use the browserId and tabId if params is an object, undefined otherwise
+    const errorBrowserId = typeof params === 'object' ? params.browserId : undefined;
+    const errorTabId = typeof params === 'object' ? params.tabId : undefined;
+    
+    return await createResponse(content, errorBrowserId, errorTabId);
   }
 }
 
@@ -669,6 +815,44 @@ export async function wait(params: WaitParams): Promise<ChromeToolResponse> {
 /**
  * Taking screenshots
  */
+/**
+ * Takes a screenshot of the current page or a specific element
+ * 
+ * This function captures visual information from the browser, either the entire page
+ * or a specific element identified by a CSS selector. The screenshot is returned as
+ * a Base64-encoded image that can be displayed by LLMs with vision capabilities.
+ * 
+ * @param params - Screenshot parameters
+ * @param params.browserId - Optional browser ID to use (default is used if not provided)
+ * @param params.tabId - Optional tab ID to use (first tab is used if not provided)
+ * @param params.selector - Optional CSS selector to capture a specific element
+ * @param params.fullPage - Whether to capture the full scrollable page (default: false)
+ * @param params.encoding - Image encoding format (default: 'base64')
+ * @param params.type - Image format type (default: 'png')
+ * @param params.quality - Optional quality for JPEG images (1-100)
+ * @param params.omitBackground - Whether to make background transparent if possible
+ * @param params.captureBeyondViewport - Whether to capture content outside viewport in fullPage mode
+ * @param params.fromSurface - Whether to screenshot from GPU surface rather than software rendering
+ * @returns Promise resolving to a response with the screenshot image
+ * 
+ * @example
+ * ```typescript
+ * // Capture the entire viewport
+ * const response = await screenshot({});
+ * 
+ * // Capture a specific element
+ * const response = await screenshot({
+ *   selector: '#main-content'
+ * });
+ * 
+ * // Capture the full page
+ * const response = await screenshot({
+ *   fullPage: true,
+ *   type: 'jpeg',
+ *   quality: 80
+ * });
+ * ```
+ */
 export async function screenshot(params: ScreenshotParams): Promise<ChromeToolResponse> {
   try {
     const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
@@ -725,6 +909,37 @@ export async function screenshot(params: ScreenshotParams): Promise<ChromeToolRe
 
 /**
  * Mouse interactions
+ */
+/**
+ * Clicks an element on the page
+ * 
+ * This function simulates a mouse click on an element identified by a CSS selector.
+ * It waits for the element to be present on the page before attempting to click it.
+ * Additional click options can be provided to customize the click behavior.
+ * 
+ * @param params - Click parameters
+ * @param params.selector - CSS selector to identify the element to click
+ * @param params.browserId - Optional browser ID to use (default is used if not provided)
+ * @param params.tabId - Optional tab ID to use (first tab is used if not provided)
+ * @param params.options - Optional click behavior options (button, clickCount, delay, etc.)
+ * @returns Promise resolving to a response with click result information
+ * 
+ * @example
+ * ```typescript
+ * // Click a button
+ * const response = await click({
+ *   selector: 'button.submit'
+ * });
+ * 
+ * // Double-click with right mouse button
+ * const response = await click({
+ *   selector: '#target-element',
+ *   options: {
+ *     button: 'right',
+ *     clickCount: 2
+ *   }
+ * });
+ * ```
  */
 export async function click(params: ClickParams): Promise<ChromeToolResponse> {
   try {
@@ -900,6 +1115,35 @@ export async function keyboard(params: KeyboardParams): Promise<ChromeToolRespon
 /**
  * Form interactions
  */
+/**
+ * Fills a form field with the specified value
+ * 
+ * This function fills an input field or textarea identified by a CSS selector
+ * with the provided value. It first clears the field by triple-clicking it
+ * (which selects all text) and then types the new value.
+ * 
+ * @param params - Fill parameters
+ * @param params.selector - CSS selector to identify the input field to fill
+ * @param params.value - The text to enter into the input field
+ * @param params.browserId - Optional browser ID to use (default is used if not provided)
+ * @param params.tabId - Optional tab ID to use (first tab is used if not provided)
+ * @returns Promise resolving to a response with fill result information
+ * 
+ * @example
+ * ```typescript
+ * // Fill a text input
+ * const response = await fill({
+ *   selector: 'input[name="username"]',
+ *   value: 'johndoe'
+ * });
+ * 
+ * // Fill a textarea
+ * const response = await fill({
+ *   selector: 'textarea#message',
+ *   value: 'This is a multi-line\nmessage to be entered.'
+ * });
+ * ```
+ */
 export async function fill(params: FillParams): Promise<ChromeToolResponse> {
   try {
     const { browserId, pageId, page } = await browserManager.getPage(params.tabId, params.browserId);
@@ -1067,6 +1311,28 @@ export async function evaluate(params: EvaluateParams): Promise<ChromeToolRespon
 
 /**
  * Check if puppeteer is installed and working
+ */
+/**
+ * Checks if Puppeteer is correctly installed and functional
+ * 
+ * This diagnostic function verifies that Puppeteer can successfully launch and control
+ * a Chrome browser. It's typically called during server startup to ensure that the
+ * browser automation system is operational before accepting requests.
+ * 
+ * The function attempts to launch a browser and then immediately close it. If this
+ * operation succeeds, Puppeteer is considered available and working.
+ * 
+ * @returns Promise resolving to a boolean indicating Puppeteer availability
+ * 
+ * @example
+ * ```typescript
+ * // Check if Puppeteer is available before starting the server
+ * const isPuppeteerAvailable = await checkPuppeteer();
+ * if (!isPuppeteerAvailable) {
+ *   console.error('Chrome automation unavailable - exiting');
+ *   process.exit(1);
+ * }
+ * ```
  */
 export async function checkPuppeteer(): Promise<boolean> {
   try {
@@ -1252,6 +1518,25 @@ export async function chain(params: any): Promise<ChromeToolResponse> {
 
 /**
  * Close all browsers on shutdown
+ */
+/**
+ * Closes all browser instances
+ * 
+ * This utility function cleanly shuts down all browser instances that were created
+ * by Chrome Control. It's typically called during server shutdown to ensure that
+ * no browser processes are left running in the background.
+ * 
+ * @returns Promise that resolves when all browsers have been closed
+ * 
+ * @example
+ * ```typescript
+ * // During server shutdown
+ * process.on('SIGTERM', async () => {
+ *   console.log('Shutting down...');
+ *   await closeAllBrowsers();
+ *   process.exit(0);
+ * });
+ * ```
  */
 export async function closeAllBrowsers(): Promise<void> {
   await browserManager.closeAllBrowsers();

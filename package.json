@@ -1,6 +1,6 @@
 {
   "name": "mcp-chrome-control",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Browser automation for AI assistants - Chrome control via JSON-RPC and MCP",
   "main": "bin/index.js",
   "type": "module",
@@ -14,17 +14,18 @@
   "scripts": {
     "build": "tsc",
     "start": "node bin/index.js",
-    "start:direct": "node bin/direct-index.js",
-    "start:simple": "node bin/simple-index.js",
     "dev": "tsc -w & nodemon bin/index.js",
-    "dev:direct": "tsc -w & nodemon bin/direct-index.js",
-    "dev:simple": "tsc -w & nodemon bin/simple-index.js",
     "lint": "eslint src --ext .ts",
     "mcp:run": "node scripts/run-mcp-call.js --file toolcalls.json",
     "mcp:add": "node scripts/run-mcp-call.js --add",
+    "test:navigate": "node tests/navigation.test.js",
+    "test": "npm run test:navigate",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "npm run docs && npx serve docs/api",
     "postinstall": "npm run build",
     "prepare": "npm run build",
-    "publish:npm": "npm run build && npm publish"
+    "publish:npm": "npm run build && npm run docs && npm publish"
   },
   "keywords": [
     "mcp",
@@ -65,6 +66,8 @@
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
     "nodemon": "^3.1.10",
+    "typedoc": "^0.28.3",
+    "typedoc-plugin-markdown": "^4.6.3",
     "typescript": "^5.8.3"
   },
   "engines": {

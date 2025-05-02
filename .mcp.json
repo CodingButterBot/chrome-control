@@ -19,8 +19,8 @@
         "SMTP_PORT": "465",
         "IMAP_SERVER": "imap.gmail.com",
         "IMAP_PORT": "993",
-        "USER_EMAIL": "your-email@gmail.com",
-        "USER_PASSWORD": "your-app-password"
+        "USER_EMAIL": "autocodecalvin@gmail.com",
+        "USER_PASSWORD": "lvni anry vnky drlu"
       }
     },
     "github": {
@@ -30,9 +30,9 @@
     },
     "chrome": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["mcp-chrome-control"],
-      "env": {}
+      "command": "node",
+      "args": ["./bin/index.js"],
+      "env": {"DEBUG": "true"}
     }
   }
 }

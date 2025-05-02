@@ -1,4 +1,39 @@
-import { Tool } from './stdio.js';
+/**
+ * Chrome Control Tools
+ * 
+ * Defines and exports all available tools for browser automation.
+ * These tools are registered with the MCP server for remote invocation
+ * by Large Language Models (LLMs) through the Model Context Protocol.
+ * 
+ * This module organizes tools into categories based on their functionality:
+ * - Browser management: Creating, listing, and closing browsers
+ * - Tab management: Creating, listing, and closing tabs
+ * - Navigation: Navigating to URLs and waiting for conditions
+ * - Screenshots: Capturing visual information from pages
+ * - Mouse interactions: Clicking, hovering, and moving the mouse
+ * - Keyboard interactions: Typing, pressing keys, etc.
+ * - Form interactions: Filling inputs, selecting options, etc.
+ * - Cookie management: Getting, setting, and deleting cookies
+ * - JavaScript execution: Running custom scripts in the browser
+ * - Action chaining: Executing multiple operations in sequence
+ * 
+ * @module tools
+ * 
+ * @example
+ * ```typescript
+ * import { McpServer } from './mcp-server.js';
+ * import { registerTools } from './tools.js';
+ * 
+ * // Create a new server
+ * const server = new McpServer();
+ * 
+ * // Register all tools with the server
+ * registerTools(server);
+ * ```
+ */
+
+import { createTool, McpServer } from './mcp-server.js';
+import { z } from 'zod';
 import {
   navigate,
   screenshot,
@@ -19,6 +54,8 @@ import {
   cookies,
   chain
 } from './puppeteer.js';
+
+// Import schemas from register.js (maintained for compatibility)
 import {
   navigateParamsSchema,
   screenshotParamsSchema,
@@ -39,227 +76,216 @@ import {
 /**
  * Browser management tools
  */
-export const browserManagementTools = {
-  createBrowser: new Tool(
+export const browserManagementTools = [
+  createTool(
     'chrome_create_browser',
     browserParamsSchema,
-    async (params) => {
-      return await createBrowser(params);
-    },
+    async (params) => createBrowser(params),
     { description: 'Create a new browser instance with optional configuration' }
   ),
   
-  listBrowsers: new Tool(
+  createTool(
     'chrome_list_browsers',
     browserParamsSchema.omit({}).optional(),
-    async () => {
-      return await listBrowsers();
-    },
+    async () => listBrowsers(),
     { description: 'List all browser instances currently running' }
   ),
   
-  closeBrowser: new Tool(
+  createTool(
     'chrome_close_browser',
     browserParamsSchema,
-    async (params) => {
-      return await closeBrowser(params);
-    },
+    async (params) => closeBrowser(params),
     { description: 'Close a browser instance' }
   )
-};
+];
 
 /**
  * Tab management tools
  */
-export const tabManagementTools = {
-  createTab: new Tool(
+export const tabManagementTools = [
+  createTool(
     'chrome_create_tab',
     tabParamsSchema,
-    async (params) => {
-      return await createTab(params);
-    },
+    async (params) => createTab(params),
     { description: 'Create a new browser tab' }
   ),
   
-  listTabs: new Tool(
+  createTool(
     'chrome_list_tabs',
     browserParamsSchema,
-    async (params) => {
-      return await listTabs(params);
-    },
+    async (params) => listTabs(params),
     { description: 'List all tabs in a browser instance' }
   ),
   
-  closeTab: new Tool(
+  createTool(
     'chrome_close_tab',
     tabParamsSchema,
-    async (params) => {
-      return await closeTab(params);
-    },
+    async (params) => closeTab(params),
     { description: 'Close a browser tab' }
   )
-};
+];
 
 /**
  * Navigation tools
  */
-export const navigationTools = {
-  navigate: new Tool(
+export const navigationTools = [
+  createTool(
     'chrome_navigate',
     navigateParamsSchema,
-    async (params) => {
-      return await navigate(params);
-    },
+    async (params) => navigate(params),
     { description: 'Navigate to a URL' }
   ),
   
-  wait: new Tool(
+  createTool(
     'chrome_wait',
     waitParamsSchema,
-    async (params) => {
-      return await wait(params);
-    },
+    async (params) => wait(params),
     { description: 'Wait for elements, navigation, or time periods' }
   )
-};
+];
 
 /**
  * Screenshot tools
  */
-export const screenshotTools = {
-  screenshot: new Tool(
+export const screenshotTools = [
+  createTool(
     'chrome_screenshot',
     screenshotParamsSchema,
-    async (params) => {
-      return await screenshot(params);
-    },
+    async (params) => screenshot(params),
     { description: 'Take a screenshot of the current page or a specific element' }
   )
-};
+];
 
 /**
  * Mouse interaction tools
  */
-export const mouseTools = {
-  click: new Tool(
+export const mouseTools = [
+  createTool(
     'chrome_click',
     clickParamsSchema,
-    async (params) => {
-      return await click(params);
-    },
+    async (params) => click(params),
     { description: 'Click an element on the page' }
   ),
   
-  hover: new Tool(
+  createTool(
     'chrome_hover',
     hoverParamsSchema,
-    async (params) => {
-      return await hover(params);
-    },
+    async (params) => hover(params),
     { description: 'Hover an element on the page' }
   ),
   
-  mouse: new Tool(
+  createTool(
     'chrome_mouse',
     mouseParamsSchema,
-    async (params) => {
-      return await mouse(params);
-    },
+    async (params) => mouse(params),
     { description: 'Control mouse position and buttons directly' }
   )
-};
+];
 
 /**
  * Keyboard interaction tools
  */
-export const keyboardTools = {
-  keyboard: new Tool(
+export const keyboardTools = [
+  createTool(
     'chrome_keyboard',
     keyboardParamsSchema,
-    async (params) => {
-      return await keyboard(params);
-    },
+    async (params) => keyboard(params),
     { description: 'Control keyboard actions (press, type, etc.)' }
   )
-};
+];
 
 /**
  * Form interaction tools
  */
-export const formTools = {
-  fill: new Tool(
+export const formTools = [
+  createTool(
     'chrome_fill',
     fillParamsSchema,
-    async (params) => {
-      return await fill(params);
-    },
+    async (params) => fill(params),
     { description: 'Fill out an input field' }
   ),
   
-  select: new Tool(
+  createTool(
     'chrome_select',
     selectParamsSchema,
-    async (params) => {
-      return await select(params);
-    },
+    async (params) => select(params),
     { description: 'Select an element on the page with Select tag' }
   )
-};
+];
 
 /**
  * Cookie management tools
  */
-export const cookieTools = {
-  cookies: new Tool(
+export const cookieTools = [
+  createTool(
     'chrome_cookies',
     cookieParamsSchema,
-    async (params) => {
-      return await cookies(params);
-    },
+    async (params) => cookies(params),
     { description: 'Manage browser cookies (get, set, delete, clear)' }
   )
-};
+];
 
 /**
  * Scripting tools
  */
-export const scriptingTools = {
-  evaluate: new Tool(
+export const scriptingTools = [
+  createTool(
     'chrome_evaluate',
     evaluateParamsSchema,
-    async (params) => {
-      return await evaluate(params);
-    },
+    async (params) => evaluate(params),
     { description: 'Execute JavaScript in the browser console' }
   )
-};
+];
 
 /**
  * Action chaining tools
  */
-export const chainingTools = {
-  chain: new Tool(
+export const chainingTools = [
+  createTool(
     'chrome_chain',
     chainParamsSchema,
-    async (params) => {
-      return await chain(params);
-    },
+    async (params) => chain(params),
     { description: 'Execute multiple actions in a single call' }
   )
-};
+];
 
 /**
  * All Chrome Control tools
  */
 export const allTools = [
-  ...Object.values(browserManagementTools),
-  ...Object.values(tabManagementTools),
-  ...Object.values(navigationTools),
-  ...Object.values(screenshotTools),
-  ...Object.values(mouseTools),
-  ...Object.values(keyboardTools),
-  ...Object.values(formTools),
-  ...Object.values(cookieTools),
-  ...Object.values(scriptingTools),
-  ...Object.values(chainingTools)
+  ...browserManagementTools,
+  ...tabManagementTools,
+  ...navigationTools,
+  ...screenshotTools,
+  ...mouseTools,
+  ...keyboardTools,
+  ...formTools,
+  ...cookieTools,
+  ...scriptingTools,
+  ...chainingTools
 ];
+
+/**
+ * Register all Chrome Control tools with an MCP server
+ * 
+ * This function registers all available browser automation tools with the provided
+ * MCP server instance. It's the main entry point for setting up the complete
+ * suite of tools that enable LLMs to control Chrome browsers.
+ * 
+ * @param server - The MCP server instance to register tools with
+ * 
+ * @example
+ * ```typescript
+ * import { McpServer } from './mcp-server.js';
+ * import { registerTools } from './tools.js';
+ * 
+ * const server = new McpServer();
+ * registerTools(server);
+ * await server.start();
+ * ```
+ * 
+ * @public
+ */
+export function registerTools(server: McpServer): void {
+  server.registerTools(allTools);
+}

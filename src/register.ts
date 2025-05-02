@@ -1,5 +1,25 @@
+/**
+ * Schema Registry for Chrome Control
+ * 
+ * This module defines the Zod validation schemas for all parameter types used by
+ * Chrome Control tools. These schemas serve several important purposes:
+ * 
+ * 1. Type validation - Ensuring that parameters meet expected formats
+ * 2. Documentation - Providing descriptions of parameters for LLMs
+ * 3. Runtime validation - Validating parameters at runtime before execution
+ * 4. TypeScript type inference - Enabling strong typing throughout the codebase
+ * 
+ * Each schema corresponds to a specific tool or tool category in the system and
+ * defines the expected structure of parameters for that tool. These schemas are
+ * used when registering tools with the MCP server to ensure that parameter
+ * validation is consistent and well-documented.
+ * 
+ * @module register
+ */
+
 import { z } from 'zod';
-import { PuppeteerMcpServer, Tool } from './stdio.js';
+import { McpServer } from './mcp-server.js';
+import { Tool } from './types/tool.js';
 import { ActionType } from './types/puppeteer.js';
 
 /**
@@ -21,7 +41,7 @@ export const browserParamsSchema = basePuppeteerParamsSchema.extend({
  * Tab management schemas
  */
 export const tabParamsSchema = basePuppeteerParamsSchema.extend({
-  url: z.string().url().optional().describe('URL to open in the new tab')
+  url: z.string().optional().describe('URL to open in the new tab')
 });
 
 /**
@@ -43,7 +63,7 @@ export const responseFormatSchema = z.object({
 }).optional().describe('Customize what data to include in the response');
 
 export const navigateParamsSchema = basePuppeteerParamsSchema.extend({
-  url: z.string().url().describe('URL to navigate to'),
+  url: z.string().describe('URL to navigate to'),
   waitUntil: z.enum(['load', 'domcontentloaded', 'networkidle0', 'networkidle2']).optional().describe('When to consider navigation finished'),
   timeout: z.number().positive().optional().describe('Navigation timeout in milliseconds'),
   responseFormat: responseFormatSchema
@@ -176,53 +196,15 @@ export const chainParamsSchema = basePuppeteerParamsSchema.extend({
 });
 
 /**
- * Register tools directly using Tool class instances
- * @param server Puppeteer MCP server
+ * Register tools with the MCP server
+ * @param server MCP server instance
  * @param tools Array of Tool instances
  */
-export function registerToolsList(server: PuppeteerMcpServer, tools: Tool<any>[]): void {
+export function registerToolsList(server: McpServer, tools: Tool<any>[]): void {
   console.error(`Registering ${tools.length} tools...`);
   
-  // Register tools using the server's addTool method
-  tools.forEach(tool => {
-    try {
-      console.error(`Registering tool: ${tool.name}`);
-      server.addTool(
-        tool.name,
-        tool.schema,
-        tool.handler,
-        tool.options
-      );
-    } catch (error) {
-      console.error(`Error registering tool ${tool.name}:`, error);
-    }
-  });
+  // Register tools using the server's registerTools method
+  server.registerTools(tools);
   
-  // Additionally register tool methods directly for older SDK versions
-  try {
-    // Helper to access private transport property
-    function getServerTransport(srv: any): any {
-      return srv._transport || null;
-    }
-    
-    // Get the server's transport
-    const transport = getServerTransport(server);
-    
-    if (transport && typeof transport.handle === 'function') {
-      // Register direct tool access methods
-      tools.forEach(tool => {
-        try {
-          transport.handle(tool.name, async (params: any) => {
-            console.error(`Direct call to tool ${tool.name}`);
-            return await tool.handler(params || {});
-          });
-        } catch (error) {
-          console.error(`Error registering direct handler for ${tool.name}:`, error);
-        }
-      });
-      console.error('Direct tool methods registered');
-    }
-  } catch (error) {
-    console.error('Error registering direct tool methods:', error);
-  }
+  console.error('All tools registered successfully');
 }
