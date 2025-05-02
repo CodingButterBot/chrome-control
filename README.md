@@ -22,7 +22,7 @@ Chrome Control is a powerful browser automation server that enables AI assistant
 - 👁️ **Visual Feedback**: Option to run in windowed mode for users to see AI actions in real-time
 - 🔄 **Session Persistence**: Support for user profiles to maintain login sessions and cookies
 
-[Website](https://CodingButterBot.github.io/chrome-control/) | [Documentation](https://github.com/CodingButterBot/chrome-control.wiki) | [Examples](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
+[Website](https://codingbutterbot.github.io/chrome-control/) | [Documentation](https://github.com/CodingButterBot/chrome-control/wiki) | [Examples](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
 
 ## Quick Start
 

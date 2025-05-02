@@ -1,8 +1,0 @@
-Chrome Control Logo
-
-This is a placeholder for the actual logo image.
-A proper logo would be a stylized browser icon with automation controls,
-using the Google Chrome colors (blue, red, yellow, green) with a modern, clean design.
-
-Please replace this text file with an actual image file (png or svg format)
-named chrome-control-logo.png or chrome-control-logo.svg.
