@@ -43,7 +43,12 @@ import {
   ExistingBrowserParams,
   UserProfileBrowserParams
 } from './types/puppeteer.js';
-import { browserManager, COMMAND_TIMEOUT, DEFAULT_LAUNCH_OPTIONS } from './browser-manager.js';
+import { 
+  browserManager, 
+  COMMAND_TIMEOUT, 
+  DEFAULT_LAUNCH_OPTIONS,
+  withTimeout 
+} from './browser-manager.js';
 
 /**
  * Helper function to get consistent context information for all tool responses
@@ -159,10 +164,17 @@ async function createResponse(
  * ```
  */
 export async function createBrowser(params: BrowserParams): Promise<ChromeToolResponse> {
+  // Get timeout from params or use default
+  const timeout = params.timeout || COMMAND_TIMEOUT;
+  
   try {
-    // Create a new browser instance with options if provided
-    const browserId = await browserManager.launchBrowser(
-      params.launchOptions ? { ...DEFAULT_LAUNCH_OPTIONS, ...params.launchOptions } : undefined
+    // Create a new browser instance with options if provided, with timeout
+    const browserId = await withTimeout(
+      browserManager.launchBrowser(
+        params.launchOptions ? { ...DEFAULT_LAUNCH_OPTIONS, ...params.launchOptions } : undefined
+      ),
+      timeout,
+      'Browser creation timed out'
     );
     
     const content = [
@@ -434,14 +446,23 @@ export async function navigate(params: NavigateParams | string): Promise<ChromeT
     }
     
     // Get page - this will throw an error if browser/tab doesn't exist
-    const { browserId: resolvedBrowserId, pageId: resolvedPageId, page } = await browserManager.getPage(tabId, browserId);
+    const { browserId: resolvedBrowserId, pageId: resolvedPageId, page } = await withTimeout(
+      browserManager.getPage(tabId, browserId),
+      timeout || COMMAND_TIMEOUT,
+      'Timed out while getting browser page'
+    );
     
     console.log(`Navigating to: ${url}`);
     
-    await page.goto(url, { 
-      waitUntil: waitUntil || 'networkidle2', 
-      timeout: timeout || COMMAND_TIMEOUT 
-    });
+    // Use both Puppeteer's built-in timeout and our own to ensure navigation doesn't hang
+    await withTimeout(
+      page.goto(url, { 
+        waitUntil: waitUntil || 'networkidle2', 
+        timeout: timeout || COMMAND_TIMEOUT 
+      }),
+      timeout || COMMAND_TIMEOUT,
+      `Navigation to ${url} timed out`
+    );
     
     // Default content response
     const content: Array<{ type: string; text: string | { src: string; alt: string } }> = [

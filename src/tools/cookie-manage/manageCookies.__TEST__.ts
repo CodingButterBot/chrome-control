@@ -220,7 +220,7 @@ describe('manageCookies Function', () => {
     // Try to use an invalid action
     try {
       const result = await manageCookies({
-        // @ts-ignore - intentionally passing invalid action for testing
+        // @ts-expect-error - intentionally passing invalid action for testing
         action: 'invalid_action',
         browserId,
         tabId

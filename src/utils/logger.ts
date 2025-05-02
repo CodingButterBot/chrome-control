@@ -314,21 +314,21 @@ export class Logger {
    * Create a logger with prefixed messages
    */
   public createPrefixedLogger(prefix: string): Omit<Logger, 'createPrefixedLogger' | 'updateConfig'> {
-    const self = this;
+    // Use arrow functions to preserve 'this' binding instead of using a local variable
     return {
-      error: (message: string, ...args: any[]) => self.error(`[${prefix}] ${message}`, ...args),
-      warn: (message: string, ...args: any[]) => self.warn(`[${prefix}] ${message}`, ...args),
-      info: (message: string, ...args: any[]) => self.info(`[${prefix}] ${message}`, ...args),
-      http: (message: string, ...args: any[]) => self.http(`[${prefix}] ${message}`, ...args),
-      debug: (message: string, ...args: any[]) => self.debug(`[${prefix}] ${message}`, ...args),
-      trace: (message: string, ...args: any[]) => self.trace(`[${prefix}] ${message}`, ...args),
+      error: (message: string, ...args: any[]) => this.error(`[${prefix}] ${message}`, ...args),
+      warn: (message: string, ...args: any[]) => this.warn(`[${prefix}] ${message}`, ...args),
+      info: (message: string, ...args: any[]) => this.info(`[${prefix}] ${message}`, ...args),
+      http: (message: string, ...args: any[]) => this.http(`[${prefix}] ${message}`, ...args),
+      debug: (message: string, ...args: any[]) => this.debug(`[${prefix}] ${message}`, ...args),
+      trace: (message: string, ...args: any[]) => this.trace(`[${prefix}] ${message}`, ...args),
       json: (level: LogLevel, obj: any, label?: string) => 
-        self.json(level, obj, label ? `[${prefix}] ${label}` : `[${prefix}]`),
+        this.json(level, obj, label ? `[${prefix}] ${label}` : `[${prefix}]`),
       exception: (error: Error | unknown, message?: string) => 
-        self.exception(error, message ? `[${prefix}] ${message}` : `[${prefix}]`),
-      startTimer: (label: string) => self.startTimer(`[${prefix}] ${label}`),
+        this.exception(error, message ? `[${prefix}] ${message}` : `[${prefix}]`),
+      startTimer: (label: string) => this.startTimer(`[${prefix}] ${label}`),
       // Pass through the close method to the main logger
-      close: () => self.close()
+      close: () => this.close()
     };
   }
 

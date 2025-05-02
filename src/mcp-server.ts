@@ -152,7 +152,7 @@ export class McpServer {
    */
   constructor(config: Partial<McpServerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    // @ts-ignore - There's a type mismatch in the SDK, but this works at runtime
+    // @ts-expect-error - There's a type mismatch in the SDK, but this works at runtime
     this.sdkServer = new BaseMcpServer(this.config);
   }
   
@@ -215,12 +215,12 @@ export class McpServer {
     // This works around the "keyValidator._parse is not a function" error
     const extractedSchema = (tool.schema as any)?._def?.shape || rawSchema;
     
-    // @ts-ignore - There are type mismatches in the SDK, but this works at runtime
+    // @ts-expect-error - There are type mismatches in the SDK, but this works at runtime
     this.sdkServer.tool(
       tool.name,
       JSON.stringify(tool.options),
       extractedSchema,
-      // @ts-ignore - There are type mismatches in the SDK, but this works at runtime
+      // @ts-expect-error - There are type mismatches in the SDK, but this works at runtime
       async (args: any) => {
         // Execute the tool handler
         const result = await tool.handler(args || {});

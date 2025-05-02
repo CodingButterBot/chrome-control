@@ -66,8 +66,48 @@ export const DEFAULT_LAUNCH_OPTIONS = {
   ]
 };
 
-// Command execution timeout in milliseconds (30 seconds)
-export const COMMAND_TIMEOUT = 30000;
+// Command execution timeout in milliseconds (30 seconds default)
+export const COMMAND_TIMEOUT = parseInt(process.env.CHROME_COMMAND_TIMEOUT || '30000', 10);
+
+/**
+ * Creates a promise that will reject after a specified timeout
+ * 
+ * @param ms - Timeout in milliseconds
+ * @returns A promise that rejects after the timeout
+ */
+export function createTimeout(ms: number = COMMAND_TIMEOUT): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Operation timed out after ${ms}ms`));
+    }, ms);
+  });
+}
+
+/**
+ * Wraps a promise with a timeout to ensure it doesn't hang indefinitely
+ * 
+ * @param promise - The promise to wrap
+ * @param timeoutMs - Timeout in milliseconds (defaults to COMMAND_TIMEOUT)
+ * @param errorMessage - Custom error message for timeouts
+ * @returns Promise that resolves with the original promise or rejects if it times out
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>, 
+  timeoutMs: number = COMMAND_TIMEOUT,
+  errorMessage?: string
+): Promise<T> {
+  const timeoutPromise = createTimeout(timeoutMs);
+  
+  try {
+    // Race the original promise against the timeout
+    return await Promise.race([promise, timeoutPromise]);
+  } catch (error) {
+    if ((error as Error).message.includes('timed out')) {
+      throw new Error(errorMessage || `Operation timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
 
 // Interface for browser context
 interface BrowserContext {
