@@ -85,11 +85,34 @@ chrome-control/
 
 ## 🧪 Testing Requirements
 
-- Add tests for all new functionality
-- Run enhanced tests when modifying MCP integration
-- Test with headless and visible browser options
-- Verify proper error handling for all tools
-- Test on different operating systems when possible
+### Testing Types
+- **MCP Protocol Tests**: Verify actual MCP JSON-RPC interface compliance
+- **Comprehensive Tests**: Use visible browsers to verify features visually
+- **Unit Tests**: Test individual functions and tools
+- **Schema Tests**: Verify proper schema validation and conversion
+
+### Testing Requirements
+
+#### Test Types
+- **LLM Simulation Tests** (`npm run test:llm-simulation`): End-to-end STDIO/JSON-RPC interface tests
+- **Visual Feature Tests** (`npm run test:full-features`): Comprehensive testing with visible browsers  
+- **Comprehensive Tests** (`npm run test:comprehensive`): Browser and tab management with visual verification
+- **MCP Protocol Tests** (`npm run test:mcp`): JSON-RPC interface testing
+- **Schema Tests** (`npm run test:zod`): Schema validation and conversion
+- **Unit Tests** (`npm run test:unit`): Component testing
+
+#### Test Guidelines
+- All new features MUST include comprehensive tests
+- Visual tests MUST use non-headless browsers for verification
+- Tests MUST check edge cases and error handling
+- Screenshots MUST be saved for visual validation
+- All tests MUST pass before committing code
+- Use `npm run precommit` to run all pre-commit checks
+
+#### CI/CD Integration
+- GitHub Actions runs tests on multiple Node.js versions
+- Tests run automatically on PRs and pushes to main
+- Test coverage is tracked and enforced
 
 ## 📋 Repository Management Guidelines
 

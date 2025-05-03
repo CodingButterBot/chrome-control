@@ -11,7 +11,7 @@ import AnonymizeUAPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 import { v4 as uuidv4 } from 'uuid';
 import { McpServer } from '../../bin/mcp-server.js';
 import { createTool } from '../../bin/mcp-server.js';
-import { allTools } from '../../bin/tools.js';
+import { allTools } from '../../bin/tools/index.js';
 import { z } from 'zod';
 
 // Apply plugins to enhance Puppeteer behavior (stealth mode)
@@ -94,6 +94,26 @@ export async function callTool(server, toolName, params = {}) {
   }
 }
 
+// Global shared browser instance that can be reused across tests
+let sharedBrowser = null;
+let sharedBrowserId = null;
+let sharedBrowserRefCount = 0;
+
+/**
+ * Checks if a browser is still connected
+ * 
+ * @param {Browser} browser - Browser to check
+ * @returns {Promise<boolean>} Whether the browser is connected
+ */
+async function isConnected(browser) {
+  try {
+    // Try to access a property that would throw if disconnected
+    return browser && typeof browser.version === 'function' && await browser.version().then(() => true).catch(() => false);
+  } catch (error) {
+    return false;
+  }
+}
+
 /**
  * Creates a test browser instance
  * 
@@ -101,22 +121,105 @@ export async function callTool(server, toolName, params = {}) {
  * @returns {Promise<{browser: Browser, browserId: string}>} Browser instance and ID
  */
 export async function createTestBrowser(options = {}) {
+  // Check if we should use visible browsers for debugging
+  // Set CHROME_VISIBLE=1 to use visible browsers
+  const useVisibleBrowser = process.env.CHROME_VISIBLE === '1';
+  
   const defaultOptions = {
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: !useVisibleBrowser, // Use headless mode by default, visible only when debugging
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,800'],
     ...options
   };
   
-  const browser = await puppeteer.launch(defaultOptions);
-  const browserId = uuidv4();
+  // Only use non-headless browser when explicitly requested or env var is set
+  if (options.headless === false) {
+    defaultOptions.headless = false;
+  }
   
-  return { 
-    browser, 
-    browserId,
-    close: async () => {
-      await browser.close();
+  // Check if we should create a new browser or use a shared one
+  // Set SHARE_BROWSER=0 to disable browser sharing
+  const useSharedBrowser = process.env.SHARE_BROWSER !== '0'; // Default to using shared browser
+  
+  // Explicitly check if shared browser still exists and is usable
+  let browserConnected = false;
+  if (useSharedBrowser && sharedBrowser) {
+    try {
+      browserConnected = await isConnected(sharedBrowser);
+    } catch (error) {
+      console.error('Error checking browser connection:', error);
+      browserConnected = false;
     }
-  };
+  }
+  
+  if (useSharedBrowser && sharedBrowser && browserConnected) {
+    // Increment reference count
+    sharedBrowserRefCount++;
+    console.log(`Using shared browser (${sharedBrowserRefCount} references)`);
+    
+    // Return the shared browser
+    return { 
+      browser: sharedBrowser, 
+      browserId: sharedBrowserId,
+      close: async () => {
+        // Decrement reference count only
+        sharedBrowserRefCount--;
+        console.log(`Decremented reference count (${sharedBrowserRefCount} references remaining)`);
+        
+        // But DON'T close the browser - we'll close it at the end of all tests
+        // This ensures we truly share ONE browser across ALL tests
+      }
+    };
+  }
+  
+  // Create a new browser instance
+  try {
+    console.log('Creating new browser instance');
+    const browser = await puppeteer.launch(defaultOptions);
+    const browserId = uuidv4();
+    
+    // If using shared browser, update the shared reference
+    if (useSharedBrowser) {
+      // Close existing shared browser if it exists
+      if (sharedBrowser) {
+        try {
+          console.log('Closing existing shared browser before creating a new one');
+          await sharedBrowser.close().catch(err => console.error('Error closing old shared browser:', err));
+        } catch (error) {
+          console.error('Error closing existing shared browser:', error);
+        }
+      }
+      
+      // Save this as the shared browser
+      sharedBrowser = browser;
+      sharedBrowserId = browserId;
+      sharedBrowserRefCount = 1;
+      console.log('Saved as new shared browser');
+      
+      return { 
+        browser, 
+        browserId,
+        close: async () => {
+          // Just decrement reference count - don't actually close the browser
+          // We'll close it at the end of all tests
+          sharedBrowserRefCount--;
+          console.log(`Decremented reference count (${sharedBrowserRefCount} references remaining)`);
+        }
+      };
+    } else {
+      // For non-shared browsers, return a standard close function that actually closes
+      return { 
+        browser, 
+        browserId,
+        close: async () => {
+          console.log('Closing non-shared browser');
+          await browser.close().catch(err => console.error('Error closing browser:', err));
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error creating browser:', error);
+    throw error;
+  }
 }
 
 /**
@@ -144,12 +247,30 @@ export async function createTestPage(browser) {
 /**
  * Sets up a complete test environment with browser and page
  * 
+ * This function sets up a complete test environment with a server, browser, and page.
+ * It can optionally use a shared browser instance to avoid creating multiple browser
+ * instances during test runs.
+ * 
+ * Environment Variables:
+ * - SHARE_BROWSER=0   - Disable browser sharing (default is enabled)
+ * - CHROME_VISIBLE=1  - Use visible browser (default is headless)
+ * 
  * @param {object} options - Browser launch options
  * @returns {Promise<object>} Test environment
  */
 export async function setupTestEnvironment(options = {}) {
+  // Check environment variables to adjust settings
+  const useSharedBrowser = process.env.SHARE_BROWSER !== '0'; // Default to sharing
+  
+  console.log(`Setting up test environment (shared browser: ${useSharedBrowser ? 'enabled' : 'disabled'})`);
+  
+  // Create server
   const { server, stop: stopServer } = await createTestServer();
+  
+  // Create or get shared browser
   const { browser, browserId, close: closeBrowser } = await createTestBrowser(options);
+  
+  // Create page in this browser
   const { page, tabId, close: closePage } = await createTestPage(browser);
   
   return {
@@ -159,9 +280,22 @@ export async function setupTestEnvironment(options = {}) {
     page,
     tabId,
     teardown: async () => {
-      await closePage();
-      await closeBrowser();
-      stopServer();
+      try {
+        console.log('Tearing down test environment...');
+        
+        // Close page first
+        await closePage().catch(err => console.error('Error closing page:', err));
+        
+        // Then close browser (this will handle reference counting for shared browsers)
+        await closeBrowser().catch(err => console.error('Error closing browser:', err));
+        
+        // Finally stop the server
+        stopServer();
+        
+        console.log('Test environment teardown completed successfully');
+      } catch (error) {
+        console.error('Error during teardown:', error);
+      }
     }
   };
 }
@@ -527,4 +661,161 @@ export async function createTestHttpServer(port = 3000) {
  */
 export function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Ensures a directory exists, creating it if it doesn't
+ * 
+ * @param {string} dir Directory path to ensure exists
+ */
+export function ensureDirectoryExists(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+/**
+ * Kill all Chrome processes forcefully using the OS
+ * This is a last resort for cleaning up
+ * 
+ * @returns {Promise<void>}
+ */
+async function killAllChromeProcesses() {
+  const { execSync } = await import('child_process');
+  const os = await import('os');
+  const platform = os.platform();
+  
+  try {
+    console.log('\n⚠️ FORCEFULLY KILLING ALL CHROME PROCESSES ⚠️');
+    console.log('This is necessary to prevent abandoned browser windows');
+    
+    // Platform-specific cleanup strategies
+    if (platform === 'win32') {
+      // Windows - kill all chrome processes
+      console.log('Executing Windows Chrome process cleanup...');
+      try {
+        // Find all Chrome PIDs and kill them
+        execSync('taskkill /F /IM chrome.exe /T', { stdio: 'pipe' });
+        execSync('taskkill /F /IM chromedriver.exe /T', { stdio: 'pipe' });
+      } catch (err) {
+        // Ignore errors - some processes might not exist
+        console.log('Some Chrome processes may not have been found (expected)');
+      }
+    } else if (platform === 'darwin') {
+      // macOS - use a combination of pkill and killall
+      console.log('Executing macOS Chrome process cleanup...');
+      try {
+        // Try various commands to ensure Chrome is killed
+        execSync('pkill -9 -f "Google Chrome"', { stdio: 'pipe' });
+        execSync('killall -9 "Google Chrome"', { stdio: 'pipe' });
+        execSync('killall -9 Chrome', { stdio: 'pipe' });
+      } catch (err) {
+        // Ignore errors - some processes might not exist
+        console.log('Some Chrome processes may not have been found (expected)');
+      }
+    } else {
+      // Linux - use pkill with different patterns
+      console.log('Executing Linux Chrome process cleanup...');
+      
+      // Function to safely execute a command
+      const safeExec = (cmd) => {
+        try {
+          execSync(cmd, { stdio: 'pipe' });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
+      
+      // Try different approaches to kill Chrome
+      const attempts = [
+        // Kill by full Chrome command line with SIGKILL (-9)
+        () => safeExec("pkill -9 -f '[c]hrome --type=renderer'"),
+        () => safeExec("pkill -9 -f '[c]hrome --headless'"),
+        () => safeExec("pkill -9 -f '[c]hrome --remote-debugging'"),
+        
+        // Kill by exact process name
+        () => safeExec("pkill -9 chrome"),
+        () => safeExec("pkill -9 chromium"),
+        () => safeExec("pkill -9 chromium-browser"),
+        
+        // Last resort - try to kill any chrome process
+        () => safeExec("killall -9 chrome"),
+        () => safeExec("killall -9 chromium"),
+        
+        // Final approach - use more aggressive pattern matching
+        () => safeExec("pkill -9 -f [c]hrome"),
+        () => safeExec("pkill -9 -f [c]hromium")
+      ];
+      
+      // Run all kill attempts
+      for (const attempt of attempts) {
+        attempt();
+      }
+    }
+    
+    // Sleep briefly to allow processes to be cleaned up
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    console.log('Chrome processes cleanup completed');
+  } catch (error) {
+    console.error('Error during Chrome process cleanup:', error.message);
+  }
+}
+
+/**
+ * Close all shared browser instances
+ * 
+ * This function ensures all browsers are properly closed, using multiple 
+ * strategies for robustness.
+ */
+export async function closeAllSharedBrowsers() {
+  console.log('\n----- CLEANING UP: Explicitly closing all browsers -----');
+  
+  // First try the gentle approach with the API
+  if (sharedBrowser) {
+    try {
+      // Check if browser is connected
+      let isConnected = false;
+      try {
+        isConnected = await sharedBrowser.version().then(() => true).catch(() => false);
+      } catch (err) {
+        console.error('Error checking browser connection:', err.message);
+      }
+      
+      if (isConnected) {
+        try {
+          // List and close pages
+          const pages = await sharedBrowser.pages();
+          console.log(`Closing ${pages.length} pages...`);
+          
+          for (const page of pages) {
+            try {
+              await page.close().catch(e => console.error(`Error closing page: ${e.message}`));
+            } catch (err) {
+              console.error(`Failed to close page: ${err.message}`);
+            }
+          }
+          
+          // Close the browser
+          console.log('Closing browser via API...');
+          await sharedBrowser.close().catch(e => console.error(`Error closing browser: ${e.message}`));
+        } catch (error) {
+          console.error('Failed to close browser via API:', error.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error during browser cleanup:', error.message);
+    } finally {
+      // Reset shared browser references
+      sharedBrowser = null;
+      sharedBrowserId = null;
+      sharedBrowserRefCount = 0;
+    }
+  }
+  
+  // As a last resort, kill all Chrome processes
+  await killAllChromeProcesses();
+  
+  console.log('----- CLEANUP COMPLETE -----\n');
 }

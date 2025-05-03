@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "bin-test",
+    "noEmit": true,
+    "types": ["node", "mocha"],
+    "rootDir": ".",
+    "moduleResolution": "node",
+    "module": "CommonJS",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "files": ["src/types/test-utils.d.ts", "src/types/test-globals.d.ts"],
+  "include": ["src/**/*", "tests/**/*", "src/**/*.__TEST__.ts"],
+  "exclude": ["node_modules", "bin"]
+}

@@ -28,10 +28,12 @@
  * @license MIT
  */
 
+// Register module aliases for path imports
+import 'module-alias/register.js';
+
 import { McpServer } from './mcp-server.js';
-import { registerTools } from './tools.js';
-import { checkPuppeteer } from './puppeteer.js';
-import { closeAllBrowsers } from './puppeteer.js';
+import { registerTools } from './tools/index.js';
+import { checkPuppeteer, closeAllBrowsers } from './puppeteer.js';
 import { parseArgs } from 'node:util';
 
 // Package version from package.json

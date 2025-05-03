@@ -61,6 +61,22 @@ export interface BasePuppeteerParams {
  */
 export interface BrowserParams extends BasePuppeteerParams {
   launchOptions?: Record<string, any>;
+  timeout?: number;
+}
+
+/**
+ * Parameters for connecting to existing browser
+ */
+export interface ExistingBrowserParams {
+  port: number;
+}
+
+/**
+ * Parameters for launching with user profile
+ */
+export interface UserProfileBrowserParams {
+  profileName: string;
+  debugPort?: number;
 }
 
 /**
@@ -185,6 +201,14 @@ export interface KeyboardParams extends BasePuppeteerParams {
 }
 
 /**
+ * Parameters for keyboard typing
+ */
+export interface KeyboardTypeParams extends BasePuppeteerParams {
+  text: string;
+  delay?: number;
+}
+
+/**
  * Parameters for waiting behaviors
  */
 export interface WaitParams extends BasePuppeteerParams {
@@ -266,5 +290,16 @@ export interface ChainAction {
  */
 export interface ChainParams extends BasePuppeteerParams {
   actions: ChainAction[];
+  stopOnError?: boolean;  // Whether to stop the chain if an action fails (default: true)
+}
+
+/**
+ * Parameters for simplified action chaining
+ */
+export interface ChainActionsParams extends BasePuppeteerParams {
+  actions: Array<{
+    action: string;  // Action name (e.g., 'create_tab', 'wait', 'fill', 'click')
+    [key: string]: any;  // Other action-specific parameters
+  }>;
   stopOnError?: boolean;  // Whether to stop the chain if an action fails (default: true)
 }

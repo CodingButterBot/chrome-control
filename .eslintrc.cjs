@@ -9,6 +9,15 @@ module.exports = {
   env: {
     node: true,
     es6: true,
+    mocha: true,
+  },
+  globals: {
+    describe: 'readonly',
+    it: 'readonly',
+    before: 'readonly',
+    after: 'readonly',
+    beforeEach: 'readonly',
+    afterEach: 'readonly',
   },
   parserOptions: {
     ecmaVersion: 2020,

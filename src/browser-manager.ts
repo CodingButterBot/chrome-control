@@ -28,6 +28,13 @@ import UAPlugin from 'puppeteer-extra-plugin-anonymize-ua';
 import { Browser, Page } from 'puppeteer';
 import { v4 as uuidv4 } from 'uuid';
 import { createLogger, LogLevel } from './utils/logger.js';
+import { 
+  connectToExistingChromeInstance, 
+  // detectRunningChromeInstances - Commented out since it's currently unused
+  findAvailableDebugPorts,
+  getChromeProfiles,
+  launchWithProfile
+} from './existing-browser.js';
 
 // Add stealth plugins
 // @ts-expect-error - typing issue with puppeteer-extra
@@ -59,8 +66,48 @@ export const DEFAULT_LAUNCH_OPTIONS = {
   ]
 };
 
-// Command execution timeout in milliseconds (30 seconds)
-export const COMMAND_TIMEOUT = 30000;
+// Command execution timeout in milliseconds (30 seconds default)
+export const COMMAND_TIMEOUT = parseInt(process.env.CHROME_COMMAND_TIMEOUT || '30000', 10);
+
+/**
+ * Creates a promise that will reject after a specified timeout
+ * 
+ * @param ms - Timeout in milliseconds
+ * @returns A promise that rejects after the timeout
+ */
+export function createTimeout(ms: number = COMMAND_TIMEOUT): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Operation timed out after ${ms}ms`));
+    }, ms);
+  });
+}
+
+/**
+ * Wraps a promise with a timeout to ensure it doesn't hang indefinitely
+ * 
+ * @param promise - The promise to wrap
+ * @param timeoutMs - Timeout in milliseconds (defaults to COMMAND_TIMEOUT)
+ * @param errorMessage - Custom error message for timeouts
+ * @returns Promise that resolves with the original promise or rejects if it times out
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>, 
+  timeoutMs: number = COMMAND_TIMEOUT,
+  errorMessage?: string
+): Promise<T> {
+  const timeoutPromise = createTimeout(timeoutMs);
+  
+  try {
+    // Race the original promise against the timeout
+    return await Promise.race([promise, timeoutPromise]);
+  } catch (error) {
+    if ((error as Error).message.includes('timed out')) {
+      throw new Error(errorMessage || `Operation timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
 
 // Interface for browser context
 interface BrowserContext {
@@ -231,6 +278,309 @@ export class BrowserManager {
     } catch (error) {
       logger.exception(error, 'Failed to launch browser');
       throw error;
+    }
+  }
+  
+  /**
+   * Connect to an existing Chrome instance using a debug port
+   * 
+   * This method connects to an already running Chrome browser that has
+   * remote debugging enabled. It can be used to control the user's existing
+   * browser session, preserving cookies, login states, and user preferences.
+   * 
+   * @param port - Debug port number to connect to
+   * @returns Promise resolving to the unique ID assigned to the browser
+   * 
+   * @example
+   * ```typescript
+   * // Connect to Chrome instance running with --remote-debugging-port=9222
+   * const browserId = await manager.connectToExistingBrowser(9222);
+   * 
+   * // Use the connected browser
+   * const { page } = await manager.getPage(undefined, browserId);
+   * await page.goto('https://example.com');
+   * ```
+   * 
+   * @throws Error if the connection fails
+   */
+  public async connectToExistingBrowser(port: number): Promise<string> {
+    const timer = logger.startTimer('connectToExistingBrowser');
+    
+    try {
+      logger.info(`Connecting to existing Chrome instance on port ${port}`);
+      
+      // Connect to the browser
+      const browser = await connectToExistingChromeInstance(port);
+      
+      // Generate a unique ID for this browser instance
+      const browserId = uuidv4();
+      
+      // Get initial pages
+      const pages = await browser.pages();
+      
+      logger.debug(`Found ${pages.length} pages in existing browser`);
+      
+      // Create page mapping
+      const pageMap = new Map<string, Page>();
+      let defaultPageId: string | null = null;
+      
+      // Map all existing pages
+      for (const page of pages) {
+        const pageId = uuidv4();
+        pageMap.set(pageId, page);
+        
+        // Set first page as default
+        if (defaultPageId === null) {
+          defaultPageId = pageId;
+        }
+        
+        // Setup event handlers for page closure
+        page.on('close', () => {
+          logger.debug(`Page ${pageId} closed`);
+          if (pageMap.has(pageId)) {
+            pageMap.delete(pageId);
+          }
+        });
+      }
+      
+      // If no pages found, create one
+      if (pageMap.size === 0) {
+        logger.debug('No pages found in existing browser, creating a new page');
+        const newPage = await browser.newPage();
+        const pageId = uuidv4();
+        pageMap.set(pageId, newPage);
+        defaultPageId = pageId;
+        
+        newPage.on('close', () => {
+          logger.debug(`Page ${pageId} closed`);
+          if (pageMap.has(pageId)) {
+            pageMap.delete(pageId);
+          }
+        });
+      }
+      
+      // Create browser context
+      const browserContext: BrowserContext = {
+        id: browserId,
+        browser,
+        pages: pageMap,
+        defaultPageId: defaultPageId!,
+        createdAt: new Date(),
+        lastUsed: new Date()
+      };
+      
+      // Store browser context
+      this.browsers.set(browserId, browserContext);
+      
+      // Set as default if no default exists
+      if (this.defaultBrowserId === null) {
+        logger.debug(`Setting ${browserId} as default browser`);
+        this.defaultBrowserId = browserId;
+      }
+      
+      logger.info(`Connected to existing browser with ID: ${browserId}`);
+      
+      // Setup event handlers for browser closure
+      browser.on('disconnected', () => {
+        logger.debug(`Browser ${browserId} disconnected, removing`);
+        this.removeBrowser(browserId);
+      });
+      
+      timer(); // End timer
+      return browserId;
+    } catch (error) {
+      logger.exception(error, 'Failed to connect to existing browser');
+      throw error;
+    }
+  }
+  
+  /**
+   * Launch a Chrome browser with a specific user profile
+   * 
+   * This method launches a new Chrome browser using an existing user profile,
+   * which includes cookies, bookmarks, extensions, and other settings.
+   * 
+   * @param profileName - Name of the profile to use (e.g., 'Default', 'Profile 1')
+   * @param debugPort - Optional port to use for remote debugging
+   * @returns Promise resolving to the unique ID assigned to the browser
+   * 
+   * @example
+   * ```typescript
+   * // Launch Chrome with the default user profile
+   * const browserId = await manager.launchWithUserProfile('Default');
+   * 
+   * // Launch Chrome with a specific profile
+   * const browserId = await manager.launchWithUserProfile('Profile 2');
+   * ```
+   * 
+   * @throws Error if the profile doesn't exist or the browser cannot be launched
+   */
+  public async launchWithUserProfile(
+    profileName: string = 'Default',
+    debugPort?: number
+  ): Promise<string> {
+    const timer = logger.startTimer('launchWithUserProfile');
+    
+    try {
+      logger.info(`Launching Chrome with user profile: ${profileName}`);
+      
+      // Launch Chrome with the specified profile
+      // Note: port is returned but not used in this function
+      const { browser } = await launchWithProfile(profileName, debugPort);
+      
+      // Generate a unique ID for this browser instance
+      const browserId = uuidv4();
+      
+      // Get initial pages
+      const pages = await browser.pages();
+      
+      logger.debug(`Found ${pages.length} pages in profile browser`);
+      
+      // Create page mapping
+      const pageMap = new Map<string, Page>();
+      let defaultPageId: string | null = null;
+      
+      // Map all existing pages
+      for (const page of pages) {
+        const pageId = uuidv4();
+        pageMap.set(pageId, page);
+        
+        // Set first page as default
+        if (defaultPageId === null) {
+          defaultPageId = pageId;
+        }
+        
+        // Setup event handlers for page closure
+        page.on('close', () => {
+          logger.debug(`Page ${pageId} closed`);
+          if (pageMap.has(pageId)) {
+            pageMap.delete(pageId);
+          }
+        });
+      }
+      
+      // If no pages found, create one
+      if (pageMap.size === 0) {
+        logger.debug('No pages found in profile browser, creating a new page');
+        const newPage = await browser.newPage();
+        const pageId = uuidv4();
+        pageMap.set(pageId, newPage);
+        defaultPageId = pageId;
+        
+        newPage.on('close', () => {
+          logger.debug(`Page ${pageId} closed`);
+          if (pageMap.has(pageId)) {
+            pageMap.delete(pageId);
+          }
+        });
+      }
+      
+      // Create browser context
+      const browserContext: BrowserContext = {
+        id: browserId,
+        browser,
+        pages: pageMap,
+        defaultPageId: defaultPageId!,
+        createdAt: new Date(),
+        lastUsed: new Date()
+      };
+      
+      // Store browser context
+      this.browsers.set(browserId, browserContext);
+      
+      // Set as default if no default exists
+      if (this.defaultBrowserId === null) {
+        logger.debug(`Setting ${browserId} as default browser`);
+        this.defaultBrowserId = browserId;
+      }
+      
+      logger.info(`Launched browser with profile ${profileName}, ID: ${browserId}`);
+      
+      // Setup event handlers for browser closure
+      browser.on('disconnected', () => {
+        logger.debug(`Browser ${browserId} disconnected, removing`);
+        this.removeBrowser(browserId);
+      });
+      
+      timer(); // End timer
+      return browserId;
+    } catch (error) {
+      logger.exception(error, 'Failed to launch browser with user profile');
+      throw error;
+    }
+  }
+  
+  /**
+   * Detect running Chrome instances with debugging ports
+   * 
+   * This method scans the system for running Chrome processes that have
+   * remote debugging enabled and returns their debug ports.
+   * 
+   * @returns Promise resolving to an array of available debug ports and their PIDs
+   * 
+   * @example
+   * ```typescript
+   * // Find Chrome instances with debugging enabled
+   * const debugPorts = await manager.detectExistingBrowsers();
+   * 
+   * // Connect to the first one
+   * if (debugPorts.length > 0) {
+   *   const browserId = await manager.connectToExistingBrowser(debugPorts[0].port);
+   * }
+   * ```
+   */
+  public async detectExistingBrowsers(): Promise<{port: number, pid: number}[]> {
+    const timer = logger.startTimer('detectExistingBrowsers');
+    
+    try {
+      logger.info('Detecting existing Chrome instances with debugging enabled');
+      
+      const debugPorts = await findAvailableDebugPorts();
+      
+      logger.info(`Found ${debugPorts.length} Chrome instances with debugging enabled`);
+      
+      timer(); // End timer
+      return debugPorts;
+    } catch (error) {
+      logger.exception(error, 'Failed to detect existing browsers');
+      return [];
+    }
+  }
+  
+  /**
+   * Get available Chrome user profiles
+   * 
+   * This method detects all Chrome user profiles available on the system,
+   * including their names, paths, and active status.
+   * 
+   * @returns Promise resolving to an array of Chrome profiles
+   * 
+   * @example
+   * ```typescript
+   * // Get all available Chrome profiles
+   * const profiles = await manager.getAvailableUserProfiles();
+   * 
+   * // Launch Chrome with the first profile
+   * if (profiles.length > 0) {
+   *   const browserId = await manager.launchWithUserProfile(profiles[0].name);
+   * }
+   * ```
+   */
+  public async getAvailableUserProfiles() {
+    const timer = logger.startTimer('getAvailableUserProfiles');
+    
+    try {
+      logger.info('Getting available Chrome user profiles');
+      
+      const profiles = await getChromeProfiles();
+      
+      logger.info(`Found ${profiles.length} Chrome user profiles`);
+      
+      timer(); // End timer
+      return profiles;
+    } catch (error) {
+      logger.exception(error, 'Failed to get Chrome user profiles');
+      return [];
     }
   }
 

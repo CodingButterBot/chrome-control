@@ -1,0 +1,77 @@
+[
+  {
+    "name": "chrome_create_browser",
+    "arguments": {
+      "launchOptions": {
+        "headless": false,
+        "args": [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--window-size=1280,800"
+        ]
+      }
+    }
+  },
+  {
+    "name": "chrome_list_browsers",
+    "arguments": {}
+  },
+  {
+    "name": "chrome_create_tab",
+    "arguments": {}
+  },
+  {
+    "name": "chrome_list_tabs",
+    "arguments": {}
+  },
+  {
+    "name": "chrome_navigate",
+    "arguments": {
+      "url": "http://localhost:3031",
+      "responseFormat": {
+        "pageTitle": true,
+        "pageText": true
+      }
+    }
+  },
+  {
+    "name": "chrome_wait",
+    "arguments": {
+      "time": 1000
+    }
+  },
+  {
+    "name": "chrome_screenshot",
+    "arguments": {
+      "name": "test-screenshot",
+      "fullPage": true
+    }
+  },
+  {
+    "name": "chrome_click",
+    "arguments": {
+      "selector": "#testButton"
+    }
+  },
+  {
+    "name": "chrome_wait",
+    "arguments": {
+      "selector": "#testResult"
+    }
+  },
+  {
+    "name": "chrome_fill",
+    "arguments": {
+      "selector": "#testInput",
+      "value": "MCP test input"
+    }
+  },
+  {
+    "name": "chrome_close_tab",
+    "arguments": {}
+  },
+  {
+    "name": "chrome_close_browser",
+    "arguments": {}
+  }
+]

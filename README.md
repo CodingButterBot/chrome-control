@@ -107,25 +107,50 @@ async function runDemo() {
 - **Screenshot Capabilities**: Capture full-page or element-specific screenshots
 - **Anti-Detection Measures**: Avoid bot detection through stealth techniques
 - **Session Persistence**: Maintain login sessions and cookies between runs
+- **Existing Browser Integration**: Connect to user's running Chrome instances with their profiles
+- **User Profile Support**: Launch Chrome with specific user profiles to access cookies and logins
 - **Action Chaining**: Execute multiple browser operations in a single request
 - **Comprehensive Logging**: Detailed logs for debugging and error tracking
 - **JavaScript Execution**: Run custom JS in the browser context
 - **Context Persistence**: Automatic tracking of browser and tab information across calls
 - **Robust Error Handling**: Better error messages and recovery mechanisms
-- **Comprehensive Test Suite**: Extensive tests covering all functionality
+- **Comprehensive Test Suite**: Extensive tests with visible browser verification
+- **MCP Protocol Compliance**: Full adherence to latest Model Context Protocol standards
 
 ## Core Tools
 
+Chrome Control offers a comprehensive set of tools to automate browser interactions, organized in a modular, maintainable structure. Each tool is encapsulated in its own directory with implementations and tests.
+
 | Category | Tools |
 |----------|-------|
-| **Browser Management** | Create, list, and close browsers |
-| **Navigation** | Navigate to URLs with custom response formats |
-| **Interaction** | Click, hover, fill forms, select options |
-| **Mouse & Keyboard** | Direct control of mouse and keyboard actions |
+| **Browser Management** | Create, list, close browsers, connect to existing browsers, detect existing browsers, launch with user profiles, list user profiles |
+| **Tab Management** | Create, list, close tabs |
+| **Navigation** | Navigate to URLs with custom response formats, wait for various conditions |
+| **Interaction** | Click, hover, fill forms, select options, submit forms |
+| **Mouse & Keyboard** | Direct control of mouse position and buttons, keyboard press/type/down/up |
 | **Screenshots** | Take full-page or element-specific screenshots |
 | **JavaScript** | Execute custom JavaScript in browser context |
+| **Cookies** | Get, set, delete, clear browser cookies |
+| **Action Chaining** | Execute multiple actions in sequence with conditional logic |
 
-[View the complete tool reference →](https://github.com/CodingButterBot/chrome-control.wiki/Tools-Reference)
+### Modular Tool Structure
+
+Each tool is organized in a dedicated directory with implementations and tests:
+
+```
+src/tools/
+├── browser-create/            # Create browser tool
+│   ├── index.ts               # Main implementation
+│   └── createBrowser.__TEST__.ts  # Co-located tests
+├── mouse-click/               # Click elements tool
+│   ├── index.ts               
+│   └── clickElement.__TEST__.ts
+...
+```
+
+This structure provides focused organization, clear ownership, and isolated testing, making the codebase more maintainable and extensible.
+
+[View the complete tool reference →](https://github.com/CodingButterBot/chrome-control/blob/main/src/tools/README.md)
 
 ## Use Cases
 
@@ -157,11 +182,21 @@ npm run test:all
 # Run unit tests with pretty formatting
 npm run test:units
 
+# Run comprehensive visible browser tests
+npm run test:comprehensive # All features with visual verification
+
+# Run MCP protocol compliance tests
+npm run test:mcp          # Tests actual MCP server JSON-RPC interface
+
+# Run visual verification tests with non-headless browsers
+npm run test:full-features   # Complete end-to-end test of all MCP tools
+npm run test:comprehensive   # Basic visual verification tests
+
 # Run specific test categories
-npm run test:nav          # Navigation tests
-npm run test:form         # Form interaction tests  
-npm run test:screenshot   # Screenshot and evaluation tests
-npm run test:zod          # Zod schema conversion tests
+npm run test:nav             # Navigation tests
+npm run test:form            # Form interaction tests  
+npm run test:screenshot      # Screenshot and evaluation tests
+npm run test:zod             # Zod schema conversion tests
 
 # Test MCP tools directly with the MCP testing utility
 npm run mcp:add chrome_create_browser '{}'
@@ -196,8 +231,10 @@ See our [Contributing Guide](https://github.com/CodingButterBot/chrome-control/b
 - [Example Scripts](https://github.com/CodingButterBot/chrome-control/tree/main/examples)
 - [API Reference](https://github.com/CodingButterBot/chrome-control.wiki/API-Reference)
 - [Context Persistence](https://github.com/CodingButterBot/chrome-control/blob/main/docs/context-persistence.md)
+- [Existing Browser Connection](https://github.com/CodingButterBot/chrome-control/blob/main/docs/existing-browser-connection.md)
 - [Test Suite Documentation](https://github.com/CodingButterBot/chrome-control/blob/main/docs/testing.md)
-- [MCP Testing](https://github.com/CodingButterBot/chrome-control/wiki/tools/MCP-Testing)
+- [MCP Protocol Testing](https://github.com/CodingButterBot/chrome-control/blob/main/docs/mcp-protocol-testing.md)
+- [MCP Testing Utility](https://github.com/CodingButterBot/chrome-control/wiki/tools/MCP-Testing)
 - [Changelog](https://github.com/CodingButterBot/chrome-control/blob/main/CHANGELOG.md)
 
 ## License

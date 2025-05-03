@@ -78,9 +78,11 @@
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
     "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typedoc": "^0.28.3",
     "typedoc-plugin-markdown": "^4.6.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0"

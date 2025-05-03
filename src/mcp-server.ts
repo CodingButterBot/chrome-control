@@ -152,7 +152,7 @@ export class McpServer {
    */
   constructor(config: Partial<McpServerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    // @ts-ignore - There's a type mismatch in the SDK, but this works at runtime
+    // @ts-expect-error - There's a type mismatch in the SDK, but this works at runtime
     this.sdkServer = new BaseMcpServer(this.config);
   }
   
@@ -166,31 +166,60 @@ export class McpServer {
     
     // Register with MCP SDK using any type to bypass type checking
     // Convert Zod schema to rawZod object for MCP compatibility
-    // Use a safer method to convert schema to JSON
+    // Use a more robust method to convert schema to JSON
     let rawSchema;
-    try {
-      // Check if schema has toJSON method
-      if (tool.schema && typeof tool.schema.toJSON === 'function') {
-        rawSchema = tool.schema.toJSON();
-      } else if (tool.schema && tool.schema._def) {
-        // Fallback for older Zod versions
-        rawSchema = JSON.parse(JSON.stringify(tool.schema));
-      } else {
-        // Last resort fallback
-        rawSchema = tool.schema;
-      }
-    } catch (error) {
-      console.error(`Failed to convert schema for tool ${tool.name}:`, error);
-      // Provide a minimal valid schema as fallback
+    
+    // Early return for null/undefined schemas
+    if (!tool.schema) {
+      console.error(`Error: Schema for tool ${tool.name} is ${tool.schema === null ? 'null' : 'undefined'}`);
       rawSchema = { type: "object", properties: {} };
+    } else {
+      try {
+        // Check if schema has toJSON method (newer Zod versions)
+        if (typeof tool.schema.toJSON === 'function') {
+          rawSchema = tool.schema.toJSON();
+        } 
+        // Check if schema has _def property (older Zod versions)
+        else if (tool.schema._def && typeof tool.schema._def === 'object') {
+          try {
+            rawSchema = JSON.parse(JSON.stringify(tool.schema));
+          } catch (jsonError) {
+            console.error(`JSON serialization error for schema ${tool.name}:`, jsonError);
+            // Fallback to minimal schema
+            rawSchema = { type: "object", properties: {} };
+          }
+        } 
+        // Last resort: schema may be a raw object already
+        else if (typeof tool.schema === 'object') {
+          // Check if it's a raw schema directly
+          if (tool.schema.type || tool.schema.properties) {
+            rawSchema = tool.schema;
+          } else {
+            console.warn(`Warning: Schema for ${tool.name} does not appear to be a valid Zod schema`);
+            rawSchema = { type: "object", properties: {} };
+          }
+        } 
+        // Invalid schema type
+        else {
+          console.error(`Error: Schema for ${tool.name} has unexpected type: ${typeof tool.schema}`);
+          rawSchema = { type: "object", properties: {} };
+        }
+      } catch (error) {
+        console.error(`Failed to convert schema for tool ${tool.name}:`, error);
+        // Always provide a valid fallback schema
+        rawSchema = { type: "object", properties: {} };
+      }
     }
     
-    // @ts-ignore - There are type mismatches in the SDK, but this works at runtime
+    // Extract the shape from schema _def if available (like in gh_cli_mcp)
+    // This works around the "keyValidator._parse is not a function" error
+    const extractedSchema = (tool.schema as any)?._def?.shape || rawSchema;
+    
     this.sdkServer.tool(
       tool.name,
       JSON.stringify(tool.options),
-      rawSchema,
-      // @ts-ignore - There are type mismatches in the SDK, but this works at runtime
+      extractedSchema,
+      // @ts-expect-error - There are type mismatches in the SDK, but this works at runtime
       async (args: any) => {
         // Execute the tool handler
         const result = await tool.handler(args || {});
@@ -324,10 +353,24 @@ export function createTool<T extends z.ZodTypeAny>(
   }
 ): Tool<T> {
   // Validate that schema is a proper Zod schema
-  if (!schema || typeof schema !== 'object') {
-    console.error(`⚠️ Warning: Invalid schema for tool ${name}`);
+  if (!schema) {
+    console.error(`⚠️ Warning: Null or undefined schema provided for tool ${name}`);
     // Create a minimal valid schema as fallback
     schema = z.object({}) as any;
+  } else if (typeof schema !== 'object') {
+    console.error(`⚠️ Warning: Invalid schema type for tool ${name} (expected object, got ${typeof schema})`);
+    // Create a minimal valid schema as fallback
+    schema = z.object({}) as any;
+  } else if (!schema['_def'] && typeof (schema as any).toJSON !== 'function') {
+    // Additional check for Zod-like structure
+    console.warn(`⚠️ Warning: Schema for tool ${name} doesn't appear to be a valid Zod schema`);
+    // Try to wrap it in a Zod object if it's not already a Zod schema
+    try {
+      schema = z.object(schema as any) as any;
+    } catch (error) {
+      console.error(`⚠️ Error wrapping schema for tool ${name}:`, error);
+      schema = z.object({}) as any;
+    }
   }
   
   // Note: schema is kept as the Zod object, conversion to rawZod happens in registerTool
