@@ -18,10 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added robust error handling for schema conversion edge cases
 - Improved validation in tool creation and registration
 - Added enhanced testing for Zod schema conversion
-- Fixed TypeScript module resolution errors in tests
-- Resolved import path handling for `.js` extensions in TypeScript
-- Improved test reliability by compiling before testing
-- Downgraded TypeScript from 5.8.3 to 5.3.3 for compatibility with eslint
+- Downgraded TypeScript from 5.8.3 to 5.3.3 for compatibility with eslint tools
+- Added ts-node and tsconfig-paths for improved module resolution in tests
 
 ### Added
 - **Existing Browser Integration**: Connect to user's running Chrome instances with debug ports
@@ -35,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for MCP method name formats (slash vs. dot notation)
 - LLM simulation test that checks proper protocol formats
 - Notes about MCP SDK compatibility issues
-- New documentation for TypeScript testing solutions
+- New documentation for TypeScript testing solutions and version compatibility
 - Specialized test runner for browser detection tests
 
 ## [1.5.2] - 2025-05-02
